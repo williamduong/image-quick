@@ -1,0 +1,79 @@
+{
+  "id": "logo",
+  "label": "Logo",
+  "description": "Clean logo concept generation for brand marks, badges, and monograms.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1024x1024",
+    "quality": "medium",
+    "background": "transparent",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brandTone": "minimal, commercial, scalable",
+    "accentColor": "deep charcoal and warm orange"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "brandName",
+        "description": "Brand or product name shown by the logo"
+      },
+      {
+        "name": "brandIdea",
+        "description": "Core concept the logo should communicate"
+      }
+    ],
+    "optional": [
+      {
+        "name": "tagline",
+        "description": "Optional supporting tagline"
+      },
+      {
+        "name": "symbolIdea",
+        "description": "Desired visual metaphor or symbol"
+      },
+      {
+        "name": "industry",
+        "description": "Industry or market context"
+      },
+      {
+        "name": "letterHint",
+        "description": "Initials or monogram letters if desired"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a modern logo concept for {{brandName}}.",
+    "fragments": {
+      "subject": "a logo that communicates {{brandIdea}} for the {{industry}} space, using {{symbolIdea}} and {{letterHint}} where appropriate",
+      "style": "flat logo concept, {{brandTone}}, geometric, highly simplified, suitable for professional branding",
+      "composition": "single centered logo presentation, isolated mark, clear silhouette, no mockup scene",
+      "lighting": "flat graphic treatment with no photoreal lighting",
+      "color": "{{accentColor}}",
+      "background": "transparent or plain neutral background",
+      "text": "{{brandName}} {{tagline}}",
+      "constraints": [
+        "must feel like a clean brand mark",
+        "avoid complex illustration",
+        "strong silhouette",
+        "works in one color and full color",
+        "no watermark"
+      ],
+      "negative": [
+        "photorealism",
+        "3d chrome effects",
+        "messy gradients",
+        "busy decorative details",
+        "garbled lettering"
+      ]
+    }
+  },
+  "policies": {
+    "notes": [
+      "Best for fast concept exploration. Final production logos should still be redrawn in vector software."
+    ]
+  }
+}

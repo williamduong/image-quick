@@ -1,0 +1,21 @@
+{
+  "id": "ui-icon",
+  "templateId": "icon",
+  "label": "UI Icon",
+  "description": "Functional product icon concept for interface actions and navigation.",
+  "slotDefaults": {
+    "usage": "software interface",
+    "shapeHint": "simple line or filled UI glyph",
+    "accentColor": "neutral dark ink"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "UI icon concept, functional, minimal, crisp, system-friendly",
+      "composition": "single isolated glyph, balanced strokes, no decorative container",
+      "constraints": [
+        "usable as interface glyph",
+        "simple and unambiguous"
+      ]
+    }
+  }
+}

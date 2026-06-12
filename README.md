@@ -198,6 +198,8 @@ The template system adds a more production-friendly flow:
 
 Bundled starter templates:
 
+- `logo`
+- `icon`
 - `product-image`
 - `blog-image`
 - `social-post`

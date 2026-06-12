@@ -1,0 +1,21 @@
+{
+  "id": "feature-icon",
+  "templateId": "icon",
+  "label": "Feature Icon",
+  "description": "Marketing-friendly feature icon concept for product pages and cards.",
+  "slotDefaults": {
+    "usage": "feature card or landing page",
+    "shapeHint": "simple geometric symbol with a mild accent background",
+    "accentColor": "bright teal"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "feature icon concept, modern SaaS marketing visual, still simple and scalable",
+      "composition": "single isolated symbol with optional subtle backing shape",
+      "constraints": [
+        "works in marketing cards",
+        "keeps icon simplicity"
+      ]
+    }
+  }
+}

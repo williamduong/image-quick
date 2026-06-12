@@ -1,0 +1,20 @@
+{
+  "id": "monogram",
+  "templateId": "logo",
+  "label": "Monogram",
+  "description": "Initial-based logo concept for premium or minimal identities.",
+  "slotDefaults": {
+    "symbolIdea": "interlocking initials",
+    "accentColor": "black, ivory, and one subtle accent"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "monogram logo concept, elegant but minimal, strong geometry",
+      "composition": "single interlocking letterform mark, centered, isolated on plain background",
+      "constraints": [
+        "clear monogram structure",
+        "premium but simple"
+      ]
+    }
+  }
+}

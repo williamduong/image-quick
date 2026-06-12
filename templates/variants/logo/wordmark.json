@@ -1,0 +1,20 @@
+{
+  "id": "wordmark",
+  "templateId": "logo",
+  "label": "Wordmark",
+  "description": "Text-led logo concept with restrained symbol use.",
+  "slotDefaults": {
+    "symbolIdea": "very subtle supporting symbol",
+    "accentColor": "charcoal with one restrained accent"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "wordmark-focused logo concept, typographic clarity, minimal embellishment, scalable branding system",
+      "composition": "brand name is primary, optional tiny supporting mark, centered presentation",
+      "constraints": [
+        "strong typographic hierarchy",
+        "readable wordmark"
+      ]
+    }
+  }
+}

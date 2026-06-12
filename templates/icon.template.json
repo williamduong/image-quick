@@ -1,0 +1,69 @@
+{
+  "id": "icon",
+  "label": "Icon",
+  "description": "Simple icon generation for app icons, UI icons, and feature symbols.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1024x1024",
+    "quality": "medium",
+    "background": "transparent",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "styleTone": "clean, minimal, scalable",
+    "accentColor": "electric blue"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "concept",
+        "description": "What the icon should represent"
+      }
+    ],
+    "optional": [
+      {
+        "name": "usage",
+        "description": "Where the icon will be used"
+      },
+      {
+        "name": "shapeHint",
+        "description": "Preferred silhouette or geometry"
+      },
+      {
+        "name": "keyword",
+        "description": "Optional text or label implied by the icon"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a clean icon for {{concept}}.",
+    "fragments": {
+      "subject": "a single icon representing {{concept}} for {{usage}}, based on {{shapeHint}}",
+      "style": "flat icon design, {{styleTone}}, crisp edges, scalable, software-product friendly",
+      "composition": "single isolated icon, centered, no scene, no extra objects",
+      "lighting": "flat graphic treatment",
+      "color": "{{accentColor}} with controlled contrast",
+      "background": "transparent or plain neutral background",
+      "text": "{{keyword}}",
+      "constraints": [
+        "icon-first composition",
+        "clean silhouette",
+        "minimal detail",
+        "no watermark"
+      ],
+      "negative": [
+        "photorealism",
+        "complex background",
+        "illustration scene",
+        "garbled text"
+      ]
+    }
+  },
+  "policies": {
+    "notes": [
+      "Best for concepting raster icons quickly; production UI icon packs may still need vector cleanup."
+    ]
+  }
+}

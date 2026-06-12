@@ -1,0 +1,20 @@
+{
+  "id": "badge-mark",
+  "templateId": "logo",
+  "label": "Badge Mark",
+  "description": "Contained logo concept suitable for stamps, seals, and social avatars.",
+  "slotDefaults": {
+    "symbolIdea": "contained emblem or badge shape",
+    "accentColor": "deep navy and warm gold"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "badge-style logo concept, contained mark, flat and brandable",
+      "composition": "single enclosed badge or emblem, balanced symmetry, compact silhouette",
+      "constraints": [
+        "works as avatar or stamp",
+        "contained shape"
+      ]
+    }
+  }
+}

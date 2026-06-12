@@ -1,0 +1,21 @@
+{
+  "id": "app-icon",
+  "templateId": "icon",
+  "label": "App Icon",
+  "description": "Rounded-square app icon concept for launchers and product surfaces.",
+  "slotDefaults": {
+    "usage": "app launcher",
+    "shapeHint": "rounded square container",
+    "accentColor": "electric blue and white"
+  },
+  "prompt": {
+    "fragments": {
+      "style": "app icon concept, minimal, crisp, consumer-software friendly",
+      "composition": "single centered icon inside a rounded-square app tile",
+      "constraints": [
+        "recognizable at small size",
+        "strong launcher presence"
+      ]
+    }
+  }
+}
