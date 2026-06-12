@@ -29,12 +29,23 @@ export interface GenerateSpec extends PromptHarness {
   outputCompression?: number;
   moderation?: "auto" | "low";
   n?: number;
+  templateId?: string;
+  variantId?: string;
+  templateLabel?: string;
+  templateVariables?: Record<string, string | number | boolean>;
 }
 
 export async function runGenerateSpec(specPath: string): Promise<string> {
   const absoluteSpecPath = resolve(specPath);
   const spec = await readJsonFile<GenerateSpec>(absoluteSpecPath);
   const outputPath = resolve(dirname(absoluteSpecPath), spec.output);
+  return runGenerate(spec, outputPath);
+}
+
+export async function runGenerate(
+  spec: GenerateSpec,
+  outputPath: string,
+): Promise<string> {
   const prompt = buildPrompt(spec);
   if (!prompt.trim()) {
     throw new Error("Prompt harness did not produce a prompt");
@@ -105,6 +116,10 @@ async function generateWithOpenAi(
   await writeJsonFile(sidecarJsonPath(outputPath, "prompt"), {
     provider: "openai",
     model: requestBody.model,
+    templateId: spec.templateId,
+    variantId: spec.variantId,
+    templateLabel: spec.templateLabel,
+    templateVariables: spec.templateVariables,
     prompt,
     revisedPrompt: first.revised_prompt,
     request: requestBody,

@@ -44,6 +44,15 @@ Install dependencies:
 npm install
 ```
 
+If installed from npm, the intended CLI flow is:
+
+```bash
+npm install -g image-quick
+image-quick doctor
+```
+
+By default, template-based generation writes images into `./out/` unless you pass `--out` explicitly. You can also override the base directory with `IMAGE_QUICK_OUTPUT_DIR`.
+
 Create local environment configuration:
 
 ```bash
@@ -62,6 +71,7 @@ npm run doctor
 - [src/providers](src/providers) - layer 1 source adapters
 - [src/layer2](src/layer2) - edit pipeline
 - [src/layer3](src/layer3) - prompt harness and image generation
+- [templates](templates) - committed generation templates and variants
 - [examples](examples) - committed example specs
 - `out/` - local generated outputs, ignored by git
 - `sample/` - local scratch/demo workspace, ignored by git
@@ -116,6 +126,37 @@ Generate an image from a prompt harness:
 npx tsx src/cli.ts generate --spec examples/generate.sample.json
 ```
 
+List available templates:
+
+```bash
+npx tsx src/cli.ts template list
+```
+
+Inspect one template:
+
+```bash
+npx tsx src/cli.ts template show product-image
+```
+
+Generate from a named template:
+
+```bash
+npx tsx src/cli.ts generate \
+  --template product-image \
+  --variant ecommerce \
+  --var productName="Air Bottle" \
+  --var keyBenefit="keeps water cold for 24 hours" \
+  --var productCategory="insulated bottle" \
+  --var badgeText="New" \
+  --var cta="Shop now"
+```
+
+If `--out` is omitted, the CLI creates a timestamped filename under `out/`, for example:
+
+```text
+out/product-image-ecommerce-2026-06-12-130500123.png
+```
+
 ## Edit pipeline
 
 Built-in edit operations:
@@ -146,6 +187,21 @@ The generation spec supports:
 - `prompt` or `promptTemplate`
 - `variables`
 - structured `fragments`
+
+The template system adds a more production-friendly flow:
+
+- `template` holds reusable visual rules and defaults
+- `variant` adjusts a template for one channel or use case
+- runtime `--var key=value` fills content slots without exposing every low-level rule
+- each run stores the resolved prompt and request payload in `*.prompt.json`
+- bundled starter templates ship with the npm package so users can test immediately after install
+
+Bundled starter templates:
+
+- `product-image`
+- `blog-image`
+- `social-post`
+- `thumbnail`
 
 Useful fragments include:
 

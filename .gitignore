@@ -32,6 +32,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local package artifacts
+*.tgz
+
 # OS / editor noise
 .DS_Store
 Thumbs.db

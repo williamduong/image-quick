@@ -1,0 +1,85 @@
+{
+  "id": "product-image",
+  "label": "Product Image",
+  "description": "Commercial product visual for ecommerce, catalog, and campaign usage.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1024x1024",
+    "quality": "low",
+    "background": "opaque",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brandName": "Image Quick",
+    "brandTone": "clean, trustworthy, modern"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "productName",
+        "description": "Product or SKU name"
+      },
+      {
+        "name": "keyBenefit",
+        "description": "Primary commercial benefit to emphasize"
+      }
+    ],
+    "optional": [
+      {
+        "name": "productCategory",
+        "description": "Category or object type"
+      },
+      {
+        "name": "audience",
+        "description": "Target customer segment"
+      },
+      {
+        "name": "badgeText",
+        "description": "Optional promo badge text"
+      },
+      {
+        "name": "accentColor",
+        "description": "Preferred accent color"
+      },
+      {
+        "name": "cta",
+        "description": "Optional call to action"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a polished product marketing image for {{productName}} by {{brandName}}.",
+    "fragments": {
+      "subject": "{{productName}}, a {{productCategory}} that communicates {{keyBenefit}}",
+      "style": "clean commercial visual, ecommerce-safe, industrial production quality, {{brandTone}}",
+      "composition": "single clear focal product, balanced layout, safe area for copy, conversion-oriented composition",
+      "lighting": "soft studio lighting with crisp edges",
+      "color": "{{accentColor}} accents on a neutral premium palette",
+      "background": "simple uncluttered branded backdrop",
+      "text": "{{badgeText}} {{cta}}",
+      "constraints": [
+        "high legibility",
+        "single coherent layout",
+        "brand-safe result",
+        "no watermark",
+        "clear product silhouette"
+      ],
+      "negative": [
+        "garbled text",
+        "messy background",
+        "extra objects not supporting the product",
+        "distorted geometry"
+      ]
+    }
+  },
+  "policies": {
+    "denyUserVariables": [
+      "styleRulesInternal"
+    ],
+    "notes": [
+      "Use for operational marketing output rather than expressive art."
+    ]
+  }
+}

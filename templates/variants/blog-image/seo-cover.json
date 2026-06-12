@@ -1,0 +1,22 @@
+{
+  "id": "seo-cover",
+  "templateId": "blog-image",
+  "label": "SEO Cover",
+  "description": "Wide blog cover optimized for article headers and social previews.",
+  "defaults": {
+    "size": "1536x1024",
+    "quality": "medium"
+  },
+  "slotDefaults": {
+    "accentColor": "warm orange",
+    "visualMetaphor": "a simple diagram-like scene"
+  },
+  "prompt": {
+    "fragments": {
+      "composition": "wide editorial header, left-aligned whitespace for title, clear hierarchy for hero area",
+      "constraints": [
+        "works well as article hero and social preview"
+      ]
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "id": "social-post",
+  "label": "Social Post",
+  "description": "Square social media visual for product updates, announcements, and campaign posts.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1024x1024",
+    "quality": "medium",
+    "background": "opaque",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brandName": "Image Quick",
+    "brandTone": "clean, fast-moving, practical",
+    "accentColor": "vivid orange"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "headline",
+        "description": "Primary message for the post"
+      },
+      {
+        "name": "campaignGoal",
+        "description": "What the post should communicate or drive"
+      }
+    ],
+    "optional": [
+      {
+        "name": "subheadline",
+        "description": "Short secondary line"
+      },
+      {
+        "name": "cta",
+        "description": "Call to action"
+      },
+      {
+        "name": "offer",
+        "description": "Promo or supporting hook"
+      },
+      {
+        "name": "visualMotif",
+        "description": "Preferred visual metaphor or object"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a polished square social media visual for {{brandName}}.",
+    "fragments": {
+      "subject": "{{visualMotif}} that communicates {{campaignGoal}}",
+      "style": "high-clarity social campaign creative, {{brandTone}}",
+      "composition": "square post layout, strong focal element, obvious reading hierarchy, mobile-first composition",
+      "lighting": "clean soft studio lighting",
+      "color": "{{accentColor}} accent-led palette with strong contrast",
+      "background": "minimal branded backdrop suitable for social feeds",
+      "text": "{{headline}} {{subheadline}} {{offer}} {{cta}}",
+      "constraints": [
+        "feed-friendly composition",
+        "high mobile readability",
+        "clear hierarchy",
+        "no watermark"
+      ],
+      "negative": [
+        "low contrast",
+        "busy clutter",
+        "garbled text",
+        "weak focal point"
+      ]
+    }
+  }
+}

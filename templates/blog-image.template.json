@@ -1,0 +1,72 @@
+{
+  "id": "blog-image",
+  "label": "Blog Image",
+  "description": "Editorial cover image for blog posts, docs articles, and knowledge content.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1536x1024",
+    "quality": "low",
+    "background": "opaque",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brandName": "Image Quick",
+    "tone": "editorial, clean, practical"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "topic",
+        "description": "Main blog topic"
+      },
+      {
+        "name": "audience",
+        "description": "Audience or reader persona"
+      }
+    ],
+    "optional": [
+      {
+        "name": "title",
+        "description": "Visible title to imply or render in the image"
+      },
+      {
+        "name": "subtitle",
+        "description": "Optional supporting message"
+      },
+      {
+        "name": "visualMetaphor",
+        "description": "Preferred metaphor or motif"
+      },
+      {
+        "name": "accentColor",
+        "description": "Preferred accent color"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a professional editorial hero image for a blog post about {{topic}} for {{audience}}.",
+    "fragments": {
+      "subject": "{{visualMetaphor}} representing {{topic}}",
+      "style": "{{tone}}, modern SaaS editorial illustration, clear and non-ornamental",
+      "composition": "wide blog header with strong focal area and generous whitespace for headline placement",
+      "lighting": "soft directional light",
+      "color": "{{accentColor}} accents on a restrained neutral palette",
+      "background": "minimal textured backdrop suitable for article headers",
+      "text": "{{title}} {{subtitle}}",
+      "constraints": [
+        "publisher-safe composition",
+        "clean crop for responsive layouts",
+        "no watermark",
+        "high readability support"
+      ],
+      "negative": [
+        "overly artistic abstraction",
+        "dense clutter",
+        "low-contrast composition",
+        "garbled lettering"
+      ]
+    }
+  }
+}

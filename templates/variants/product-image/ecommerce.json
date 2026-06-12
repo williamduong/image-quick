@@ -1,0 +1,23 @@
+{
+  "id": "ecommerce",
+  "templateId": "product-image",
+  "label": "Ecommerce",
+  "description": "Sharper retail presentation for listing pages and storefront tiles.",
+  "defaults": {
+    "size": "1024x1024",
+    "quality": "medium"
+  },
+  "slotDefaults": {
+    "accentColor": "muted coral"
+  },
+  "prompt": {
+    "fragments": {
+      "composition": "front-facing retail composition, clear product hero, room for badge and price overlays",
+      "background": "clean ecommerce backdrop with subtle depth",
+      "constraints": [
+        "catalog-friendly framing",
+        "clear edges for cutout reuse"
+      ]
+    }
+  }
+}

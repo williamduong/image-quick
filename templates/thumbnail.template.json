@@ -1,0 +1,69 @@
+{
+  "id": "thumbnail",
+  "label": "Thumbnail",
+  "description": "Wide thumbnail visual for video covers, tutorials, and explainer content.",
+  "defaults": {
+    "provider": "openai",
+    "model": "gpt-image-1-mini",
+    "size": "1536x1024",
+    "quality": "medium",
+    "background": "opaque",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brandName": "Image Quick",
+    "brandTone": "bold, instructional, crisp",
+    "accentColor": "bright amber"
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "title",
+        "description": "Primary thumbnail title"
+      },
+      {
+        "name": "topic",
+        "description": "Topic or theme"
+      }
+    ],
+    "optional": [
+      {
+        "name": "hook",
+        "description": "Short curiosity or promise hook"
+      },
+      {
+        "name": "visualMotif",
+        "description": "Visual symbol that reinforces the topic"
+      },
+      {
+        "name": "audience",
+        "description": "Target viewer"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Create a bold wide thumbnail image about {{topic}} for {{brandName}}.",
+    "fragments": {
+      "subject": "{{visualMotif}} representing {{topic}} for {{audience}}",
+      "style": "tutorial thumbnail, bold but controlled, {{brandTone}}",
+      "composition": "wide thumbnail crop, very strong focal point, clear empty zones for big title treatment",
+      "lighting": "high-contrast studio lighting",
+      "color": "{{accentColor}} accent color with strong separation from the background",
+      "background": "simple energetic backdrop with depth but low clutter",
+      "text": "{{title}} {{hook}}",
+      "constraints": [
+        "works at small preview sizes",
+        "strong click-through clarity",
+        "high contrast",
+        "no watermark"
+      ],
+      "negative": [
+        "tiny unreadable details",
+        "muddy composition",
+        "garbled text",
+        "too many competing elements"
+      ]
+    }
+  }
+}
