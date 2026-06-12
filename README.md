@@ -1,105 +1,124 @@
 # image-quick
 
-CLI three-layer image workflow:
+`image-quick` is a TypeScript CLI for a three-layer image workflow:
 
-1. Pull open-licensed assets.
-2. Make safe, non-destructive edits.
-3. Generate new images from an AI prompt harness.
+1. Pull open-license assets such as photos and icons.
+2. Make light, repeatable edits through a JSON pipeline.
+3. Generate original images from an AI prompt harness.
 
-## Why this stack
+The goal is to keep one practical toolchain for sourcing, adapting, and generating visuals without losing license metadata or prompt history.
 
-- Layer 1:
-  - `Openverse` for open-licensed images.
-  - `Iconify` for open-source icon sets with collection license metadata.
-- Layer 2:
-  - `sharp` / `libvips` for fast in-process image transforms.
-  - Optional `rembg` bridge for background removal.
-  - Optional `ImageMagick` bridge for classic CLI-heavy edits and effects.
-- Layer 3:
-  - OpenAI Images API adapter with a reusable prompt harness.
+## What it does
 
-This repo keeps a metadata sidecar next to downloaded or generated files so license and prompt context do not get lost.
+- Layer 1 pulls:
+  - Openverse images filtered to `CC BY`, `CC BY-SA`, `CC0`, and `PDM`
+  - Iconify icons with collection-level license metadata
+- Layer 2 edits:
+  - Fast in-process transforms with `sharp` / `libvips`
+  - Optional background removal through `rembg`
+  - Optional escape hatch into raw `ImageMagick`
+- Layer 3 generates:
+  - OpenAI Images API requests built from a reusable prompt harness
 
-## Install
+Every fetched, edited, or generated file gets a sidecar JSON file so provenance is preserved:
+
+- `*.license.json`
+- `*.edit.json`
+- `*.prompt.json`
+
+## Requirements
+
+- Node.js 22+
+- npm 11+
+- Optional for layer 2:
+  - `magick` from ImageMagick
+  - `rembg`
+- Optional for layer 3:
+  - `OPENAI_API_KEY`
+
+## Setup
+
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Create local environment configuration:
+
+```bash
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY` only if you want layer 3.
-
-Optional local tools for layer 2:
-
-- ImageMagick: `magick`
-- rembg: `rembg`
-
-Check availability:
+Check that optional tools are available:
 
 ```bash
 npm run doctor
 ```
 
-## Layer 1: pull free-license assets
+## Project layout
 
-Search openly licensed images:
+- [src/cli.ts](src/cli.ts) - CLI entrypoint
+- [src/providers](src/providers) - layer 1 source adapters
+- [src/layer2](src/layer2) - edit pipeline
+- [src/layer3](src/layer3) - prompt harness and image generation
+- [examples](examples) - committed example specs
+- `out/` - local generated outputs, ignored by git
+- `sample/` - local scratch/demo workspace, ignored by git
+
+## Commands
+
+Search Openverse:
 
 ```bash
 npx tsx src/cli.ts search openverse --query "cat" --limit 5
 ```
 
-Download one result:
+Fetch one Openverse asset:
 
 ```bash
 npx tsx src/cli.ts fetch openverse --id 1c5442f6-6bb6-4ab7-b603-f598e7579dd2 --out out/openverse-cat.jpg
 ```
 
-Search icons:
+Search Iconify:
 
 ```bash
 npx tsx src/cli.ts search iconify --query "mail" --limit 10
 ```
 
-Download an icon as SVG or PNG:
+Fetch one icon:
 
 ```bash
-npx tsx src/cli.ts fetch iconify --icon lucide:mail --out out/mail.svg
 npx tsx src/cli.ts fetch iconify --icon lucide:mail --out out/mail.png
 ```
 
-Notes:
-
-- Openverse is filtered to `CC BY`, `CC BY-SA`, `CC0`, and `PDM`.
-- Iconify collections are open source, but licenses vary by icon set. The tool stores the collection license in `*.license.json`.
-- You should still review the final license metadata before publishing commercially sensitive work.
-
-## Layer 2: edit assets
-
-Run a basic poster edit:
+Run an edit pipeline:
 
 ```bash
 npx tsx src/cli.ts edit --spec examples/edit.sample.json
 ```
 
-Add an icon overlay:
-
-```bash
-npx tsx src/cli.ts edit --spec examples/edit.with-icon.sample.json
-```
-
-Remove background with `rembg`:
+Run a background-removal pipeline:
 
 ```bash
 npx tsx src/cli.ts edit --spec examples/edit.rembg.sample.json
 ```
 
-Call raw ImageMagick:
+Run an ImageMagick-backed edit:
 
 ```bash
 npx tsx src/cli.ts edit --spec examples/edit.imagemagick.sample.json
 ```
 
-Supported built-in operations:
+Generate an image from a prompt harness:
+
+```bash
+npx tsx src/cli.ts generate --spec examples/generate.sample.json
+```
+
+## Edit pipeline
+
+Built-in edit operations:
 
 - `resize`
 - `extract`
@@ -118,30 +137,47 @@ Supported built-in operations:
 - `removeBackground`
 - `imagemagick`
 
-For `imagemagick`, use `{{input}}` and `{{output}}` placeholders in the `args` array.
+For `imagemagick`, use `{{input}}` and `{{output}}` placeholders inside the `args` array.
 
-## Layer 3: generate images with a prompt harness
+## Prompt harness
 
-```bash
-npx tsx src/cli.ts generate --spec examples/generate.sample.json
-```
-
-The harness supports:
+The generation spec supports:
 
 - `prompt` or `promptTemplate`
 - `variables`
-- structured `fragments` such as `subject`, `style`, `composition`, `constraints`, and `negative`
+- structured `fragments`
 
-The tool stores a `*.prompt.json` sidecar with the final compiled prompt and request payload.
+Useful fragments include:
 
-## Suggested production shape
+- `subject`
+- `style`
+- `composition`
+- `lighting`
+- `color`
+- `background`
+- `constraints`
+- `negative`
 
-If you want to turn this into a full product, the next practical step is:
+## Git hygiene
 
-1. Wrap the CLI in a small API service.
-2. Store asset metadata in SQLite or Postgres.
-3. Add job queues for heavy edit/generation steps.
-4. Add moderation, upload, and template libraries.
+This repo intentionally ignores local artifacts:
+
+- `.env`
+- `dist/`
+- `node_modules/`
+- `out/`
+- `sample/`
+
+That keeps generated assets, test runs, and secrets out of commits while the reusable specs remain in [examples](examples).
+
+## Next steps
+
+If you want to turn this into a fuller product, the natural next steps are:
+
+1. Add a small API wrapper around the CLI.
+2. Persist assets and metadata in SQLite or Postgres.
+3. Queue heavy edit/generation work in background jobs.
+4. Add moderation, upload targets, and reusable templates.
 
 ## References
 
