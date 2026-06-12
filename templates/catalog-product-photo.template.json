@@ -55,6 +55,10 @@
       {
         "name": "openverseId",
         "description": "Optional exact Openverse image id to pin a known asset in asset-only mode"
+      },
+      {
+        "name": "assetUrl",
+        "description": "Optional direct external asset URL to bypass Openverse search in asset-only mode"
       }
     ]
   },

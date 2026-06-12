@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 
@@ -16,7 +16,7 @@ import {
   writeJsonFile,
   writeTextFile,
 } from "../utils/fs.js";
-import { downloadToFile } from "../utils/http.js";
+import { downloadToFile, downloadToTempFile } from "../utils/http.js";
 import {
   buildPrompt,
   renderTemplateString,
@@ -111,6 +111,7 @@ export interface GenerateSpec extends PromptHarness {
   moderation?: GenerateModeration;
   n?: number;
   tier?: GenerationTier;
+  assetUrl?: string;
   assetWorkflow?: AssetWorkflowConfig;
   templateId?: string;
   variantId?: string;
@@ -120,7 +121,7 @@ export interface GenerateSpec extends PromptHarness {
 
 export async function runGenerateSpec(
   specPath: string,
-  overrides?: Partial<Pick<GenerateSpec, "tier" | "provider">>,
+  overrides?: Partial<Pick<GenerateSpec, "tier" | "provider" | "assetUrl">>,
 ): Promise<string> {
   const absoluteSpecPath = resolve(specPath);
   const spec = await readJsonFile<GenerateSpec>(absoluteSpecPath);
@@ -402,11 +403,14 @@ async function generateWithAssets(
 
   const variables = resolveGenerationVariables(spec);
   const pinnedOpenverseId = asString(variables.openverseId)?.trim();
+  const assetUrl = spec.assetUrl?.trim() || asString(variables.assetUrl)?.trim();
   let selected: OpenverseImage | undefined;
   let resolvedQuery = "";
   let attemptedQueries: string[] = [];
 
-  if (pinnedOpenverseId) {
+  if (assetUrl) {
+    resolvedQuery = "direct-asset-url";
+  } else if (pinnedOpenverseId) {
     selected = {
       id: pinnedOpenverseId,
       title: "Pinned Openverse asset",
@@ -448,11 +452,13 @@ async function generateWithAssets(
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), "image-quick-asset-"));
-  const sourceExtension = extensionFromOpenverseAsset(selected);
+  const sourceExtension = selected ? extensionFromOpenverseAsset(selected) : ".png";
   const sourcePath = join(tempDir, `source${sourceExtension}`);
 
   try {
-    const asset = await downloadOpenverseImage(selected.id, sourcePath);
+    const asset = assetUrl
+      ? await downloadExternalAsset(assetUrl, sourcePath)
+      : await downloadOpenverseImage(selected!.id, sourcePath);
     const editSpec: EditSpec = {
       input: sourcePath,
       output: outputPath,
@@ -461,7 +467,7 @@ async function generateWithAssets(
       operations: workflow.edit.operations,
     };
     await runEdit(editSpec);
-    await writeFinalLicenseMetadata(outputPath, asset, resolvedQuery);
+    await writeFinalLicenseMetadata(outputPath, asset, resolvedQuery, assetUrl);
     await writeGenerationMetadata(outputPath, {
       provider: "asset-only",
       tier: "asset-only",
@@ -472,6 +478,7 @@ async function generateWithAssets(
       prompt,
       searchQuery: resolvedQuery,
       attemptedQueries,
+      assetUrl,
       openverseId: pinnedOpenverseId,
       selectedAsset: {
         id: asset.id,
@@ -530,7 +537,20 @@ async function writeFinalLicenseMetadata(
   outputPath: string,
   asset: OpenverseImage,
   query: string,
+  assetUrl?: string,
 ): Promise<void> {
+  if (asset.source === "external-url") {
+    await writeJsonFile(sidecarJsonPath(outputPath, "license"), {
+      provider: "external-url",
+      title: asset.title,
+      sourceUrl: assetUrl ?? asset.url,
+      searchQuery: query,
+      note: "License metadata is unknown for direct external URLs. Verify rights before reuse.",
+      derivedAt: new Date().toISOString(),
+    });
+    return;
+  }
+
   await writeJsonFile(sidecarJsonPath(outputPath, "license"), {
     provider: "openverse",
     id: asset.id,
@@ -582,6 +602,7 @@ function resolveGenerationVariables(
   return {
     ...(spec.variables ?? {}),
     ...(spec.templateVariables ?? {}),
+    ...(spec.assetUrl ? { assetUrl: spec.assetUrl } : {}),
   };
 }
 
@@ -683,4 +704,40 @@ function asString(value: string | number | boolean | undefined): string | undefi
   }
 
   return String(value);
+}
+
+async function downloadExternalAsset(
+  assetUrl: string,
+  outputPath: string,
+): Promise<OpenverseImage> {
+  const tempDownload = await downloadToTempFile(
+    assetUrl,
+    "image-quick-asset-url-",
+    extname(outputPath) || ".png",
+  );
+
+  try {
+    await ensureDirForFile(outputPath);
+    await writeTextFile(outputPath, await readFile(tempDownload.filePath));
+  } finally {
+    await rm(tempDownload.tempDir, { recursive: true, force: true });
+  }
+
+  return {
+    id: assetUrl,
+    title: "External asset URL",
+    url: assetUrl,
+    thumbnail: assetUrl,
+    creator: null,
+    creator_url: null,
+    license: "unknown",
+    license_version: null,
+    license_url: null,
+    provider: "external-url",
+    source: "external-url",
+    attribution: "",
+    foreign_landing_url: assetUrl,
+    width: null,
+    height: null,
+  };
 }

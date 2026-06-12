@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import "dotenv/config";
 
 import { resolve } from "node:path";
 
@@ -35,12 +34,81 @@ import {
   isGenerationTier,
   type GenerationTier,
 } from "./layer3/tiers.js";
+import { loadClosestEnv } from "./utils/env.js";
 import { readJsonFile, writeJsonFile } from "./utils/fs.js";
 import { runCommand } from "./utils/process.js";
+import {
+  getSettingsPath,
+  readSettings,
+  updateSettings,
+} from "./utils/settings.js";
+
+loadClosestEnv();
 
 const program = new Command();
 
 program.name(APP_NAME).description("Tiered image workflow CLI").version(APP_VERSION);
+
+const settingsCommand = program
+  .command("settings")
+  .description("Manage persistent local CLI settings");
+
+settingsCommand
+  .command("show")
+  .description("Show current settings and settings file location")
+  .action(async () => {
+    const settings = await readSettings();
+    console.log(JSON.stringify({
+      path: getSettingsPath(),
+      settings,
+    }, null, 2));
+  });
+
+settingsCommand
+  .command("set")
+  .description("Update one setting")
+  .argument("<key>", "Setting key")
+  .argument("<value>", "Setting value")
+  .action(async (key: string, value: string) => {
+    switch (key) {
+      case "output-dir": {
+        const outputDir = resolve(value);
+        const settings = await updateSettings((current) => ({
+          ...current,
+          outputDir,
+        }));
+        console.log(JSON.stringify({
+          path: getSettingsPath(),
+          settings,
+        }, null, 2));
+        return;
+      }
+      default:
+        throw new Error(`Unsupported setting key: ${key}`);
+    }
+  });
+
+settingsCommand
+  .command("clear")
+  .description("Clear one setting")
+  .argument("<key>", "Setting key")
+  .action(async (key: string) => {
+    switch (key) {
+      case "output-dir": {
+        const settings = await updateSettings((current) => ({
+          ...current,
+          outputDir: undefined,
+        }));
+        console.log(JSON.stringify({
+          path: getSettingsPath(),
+          settings,
+        }, null, 2));
+        return;
+      }
+      default:
+        throw new Error(`Unsupported setting key: ${key}`);
+    }
+  });
 
 program
   .command("doctor")
@@ -208,8 +276,11 @@ program
   .command("edit")
   .description("Layer 2 image edits from a JSON spec")
   .requiredOption("-s, --spec <path>", "Path to edit spec JSON")
-  .action(async (options: { spec: string }) => {
-    const output = await runEditSpec(options.spec);
+  .option("--input-url <url>", "Override the base input image with a remote URL")
+  .action(async (options: { spec: string; inputUrl?: string }) => {
+    const output = await runEditSpec(options.spec, {
+      inputUrl: options.inputUrl,
+    });
     console.log(JSON.stringify({ output }, null, 2));
   });
 
@@ -226,6 +297,7 @@ program
   .option("--provider <provider>", "Image provider id from `provider list`")
   .option("-o, --out <path>", "Output image path when using a template")
   .option("--input <path>", "Path to a JSON file with template variables")
+  .option("--asset-url <url>", "Direct remote asset URL for asset-only flow")
   .option("--var <key=value>", "Template variable override", collectKeyValue, [])
   .action(async (options: {
     spec?: string;
@@ -235,6 +307,7 @@ program
     provider?: string;
     out?: string;
     input?: string;
+    assetUrl?: string;
     var: Array<[string, string | number | boolean]>;
   }) => {
     const tier = parseTierOption(options.tier);
@@ -244,6 +317,7 @@ program
       const output = await runGenerateSpec(options.spec, {
         tier,
         provider,
+        assetUrl: options.assetUrl,
       });
       console.log(JSON.stringify({ output }, null, 2));
       return;
@@ -259,7 +333,7 @@ program
     const cliVariables = Object.fromEntries(options.var);
     const outputPath =
       options.out ??
-      buildDefaultOutputPath(options.template, options.variant, tier);
+      await buildDefaultOutputPath(options.template, options.variant, tier);
     const compiled = await compileTemplate({
       templateId: options.template,
       variantId: options.variant,
@@ -269,6 +343,7 @@ program
       variables: {
         ...fileVariables,
         ...cliVariables,
+        ...(options.assetUrl ? { assetUrl: options.assetUrl } : {}),
       },
     });
     const output = await runGenerate(compiled.spec, resolve(outputPath));
@@ -319,12 +394,16 @@ function parseMaybePrimitive(value: string): string | number | boolean {
   return value;
 }
 
-function buildDefaultOutputPath(
+async function buildDefaultOutputPath(
   templateId: string,
   variantId?: string,
   tier?: GenerationTier,
-): string {
-  const outputDir = process.env.IMAGE_QUICK_OUTPUT_DIR?.trim() || "out";
+): Promise<string> {
+  const settings = await readSettings();
+  const outputDir =
+    settings.outputDir?.trim() ||
+    process.env.IMAGE_QUICK_OUTPUT_DIR?.trim() ||
+    "out";
   const stamp = new Date()
     .toISOString()
     .replaceAll(":", "")

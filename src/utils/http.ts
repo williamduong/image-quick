@@ -1,3 +1,6 @@
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { extname, join } from "node:path";
 import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 
@@ -49,4 +52,29 @@ export async function downloadToFile(
 
   await ensureDirForFile(outputPath);
   await pipeline(response.body, createWriteStream(outputPath));
+}
+
+export async function downloadToTempFile(
+  url: string,
+  prefix: string,
+  fallbackExtension: string = ".bin",
+): Promise<{ tempDir: string; filePath: string }> {
+  const tempDir = await mkdtemp(join(tmpdir(), prefix));
+  const filePath = join(tempDir, `input${inferExtensionFromUrl(url, fallbackExtension)}`);
+  await downloadToFile(url, filePath);
+  return { tempDir, filePath };
+}
+
+function inferExtensionFromUrl(url: string, fallbackExtension: string): string {
+  try {
+    const parsed = new URL(url);
+    const extension = extname(parsed.pathname).toLowerCase();
+    if (extension) {
+      return extension;
+    }
+  } catch {
+    return fallbackExtension;
+  }
+
+  return fallbackExtension;
 }

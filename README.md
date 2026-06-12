@@ -55,6 +55,15 @@ image-quick doctor
 
 By default, template-based generation writes images into `./out/` unless you pass `--out` explicitly. You can also override the base directory with `IMAGE_QUICK_OUTPUT_DIR`.
 
+For a persistent machine-level default output directory, use:
+
+```bash
+image-quick settings set output-dir ./my-default-output
+image-quick settings show
+```
+
+If no setting is saved and no `IMAGE_QUICK_OUTPUT_DIR` env var is set, the CLI falls back to `./out/` relative to the directory where you run the command.
+
 Create local environment configuration:
 
 ```bash
@@ -117,6 +126,14 @@ Run an edit pipeline:
 npx tsx src/cli.ts edit --spec examples/edit.sample.json
 ```
 
+Run an edit pipeline with a remote input image:
+
+```bash
+npx tsx src/cli.ts edit \
+  --spec examples/edit.sample.json \
+  --input-url https://example.com/image.jpg
+```
+
 Run a background-removal pipeline:
 
 ```bash
@@ -174,6 +191,18 @@ npx tsx src/cli.ts generate \
   --template catalog-product-photo \
   --tier ai-mini \
   --input examples/catalog-product-photo.variables.json
+```
+
+Force asset-only mode to start from a direct external image URL:
+
+```bash
+npx tsx src/cli.ts generate \
+  --template catalog-product-photo \
+  --tier asset-only \
+  --asset-url https://example.com/product.png \
+  --var productName="Sample Product" \
+  --var category="Retail" \
+  --var productType="Packaging"
 ```
 
 Pick a specific provider while keeping the same tier abstraction:
@@ -267,6 +296,8 @@ Current hardcoded registry:
   - Registry only for now, with starter mappings such as `black-forest-labs/flux-1.1-pro`, `google/imagen-4-ultra`, `ideogram-ai/ideogram-v3-turbo`
 
 For deterministic asset-only runs in production, you can pass an `openverseId` variable to pin a specific source asset and skip search entirely.
+
+You can also pass `--asset-url` to bypass Openverse search completely and start from a direct remote image URL. In that case the tool keeps provenance metadata, but license information is marked as unknown and should be verified manually.
 
 Registry location:
 

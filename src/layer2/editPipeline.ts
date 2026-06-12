@@ -11,6 +11,7 @@ import {
   sidecarJsonPath,
   writeJsonFile,
 } from "../utils/fs.js";
+import { downloadToTempFile } from "../utils/http.js";
 import { runCommand } from "../utils/process.js";
 import { escapeXml } from "../utils/svg.js";
 
@@ -182,38 +183,67 @@ export interface EditSpec {
   operations: EditOperation[];
   format?: "png" | "jpeg" | "webp";
   quality?: number;
+  inputUrl?: string;
 }
 
-export async function runEditSpec(specPath: string): Promise<string> {
+export async function runEditSpec(
+  specPath: string,
+  overrides?: Partial<Pick<EditSpec, "inputUrl">>,
+): Promise<string> {
   const absoluteSpecPath = resolve(specPath);
   const specDir = dirname(absoluteSpecPath);
   const spec = await readJsonFile<EditSpec>(absoluteSpecPath);
-  return runEdit(spec, specDir);
+  return runEdit(
+    {
+      ...spec,
+      ...overrides,
+    },
+    specDir,
+  );
 }
 
 export async function runEdit(
   spec: EditSpec,
   baseDir: string = process.cwd(),
 ): Promise<string> {
-  const inputPath = resolveFrom(baseDir, spec.input);
   const outputPath = resolveFrom(baseDir, spec.output);
-  const inputBuffer = await readFile(inputPath);
-  let current = sharp(inputBuffer, { failOn: "none" });
+  const remoteInput = spec.inputUrl?.trim();
+  const inputPath = remoteInput
+    ? undefined
+    : resolveFrom(baseDir, spec.input);
+  const tempDownload = remoteInput
+    ? await downloadToTempFile(remoteInput, "image-quick-edit-input-", ".png")
+    : undefined;
 
-  for (const operation of spec.operations) {
-    current = await applyOperation(current, operation, baseDir);
+  try {
+    const effectiveInputPath = tempDownload?.filePath ?? inputPath;
+    if (!effectiveInputPath) {
+      throw new Error("Edit input is missing");
+    }
+
+    const inputBuffer = await readFile(effectiveInputPath);
+    let current = sharp(inputBuffer, { failOn: "none" });
+
+    for (const operation of spec.operations) {
+      current = await applyOperation(current, operation, baseDir);
+    }
+
+    await ensureDirForFile(outputPath);
+    await saveSharpOutput(current, spec, outputPath);
+    await writeJsonFile(sidecarJsonPath(outputPath, "edit"), {
+      ...spec,
+      input: effectiveInputPath,
+      inputUrl: remoteInput,
+      output: outputPath,
+      generatedAt: new Date().toISOString(),
+    });
+
+    return outputPath;
+  } finally {
+    if (tempDownload) {
+      await rm(tempDownload.tempDir, { recursive: true, force: true });
+    }
   }
-
-  await ensureDirForFile(outputPath);
-  await saveSharpOutput(current, spec, outputPath);
-  await writeJsonFile(sidecarJsonPath(outputPath, "edit"), {
-    ...spec,
-    input: inputPath,
-    output: outputPath,
-    generatedAt: new Date().toISOString(),
-  });
-
-  return outputPath;
 }
 
 async function applyOperation(
