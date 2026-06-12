@@ -1,6 +1,6 @@
 {
   "name": "image-quick",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tiered image workflow CLI for open-license asset sourcing, repeatable edits, and AI image generation.",
   "license": "MIT",
   "author": "williamduong <duongtannghia@gmail.com>",
@@ -21,6 +21,8 @@
   "files": [
     "dist",
     "templates",
+    "examples",
+    "publish",
     "README.md",
     "LICENSE"
   ],
@@ -29,8 +31,10 @@
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "doctor": "tsx src/cli.ts doctor",
+    "smoke": "npm run build && node scripts/smoke-tests.mjs",
     "prepack": "npm run build",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "publish:check": "npm run smoke && npm publish --dry-run"
   },
   "engines": {
     "node": ">=22"

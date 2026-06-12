@@ -1,0 +1,33 @@
+{
+  "provider": "openai",
+  "output": "../out/product-polish-sample.png",
+  "model": "gpt-image-1.5",
+  "size": "2048x2048",
+  "quality": "medium",
+  "background": "opaque",
+  "inputImageUrls": [
+    "https://commons.wikimedia.org/wiki/Special:FilePath/File:Coca-cola_50cl_can_-_Italia.jpg"
+  ],
+  "inputFidelity": "high",
+  "promptTemplate": "Polish this retail product image for ecommerce catalog use.",
+  "fragments": {
+    "subject": "preserve the same Coca-Cola can identity, keep the original packaging structure and visible branding consistent with the source image",
+    "style": "commercial retail photography, shelf-ready packshot, realistic materials, clean edge treatment",
+    "composition": "single product, centered, 1:1 square canvas, clean breathing room around the can",
+    "lighting": "soft studio lighting with subtle realistic shadow",
+    "color": "accurate red aluminum can, clean whites, no oversaturation",
+    "background": "pure white background #FFFFFF",
+    "constraints": [
+      "keep it photorealistic",
+      "improve polish and clarity without inventing a different product",
+      "preserve the packshot feel"
+    ],
+    "negative": [
+      "cartoon style",
+      "dramatic props",
+      "busy background",
+      "wrong brand text",
+      "wrong packaging shape"
+    ]
+  }
+}

@@ -223,10 +223,7 @@ export async function runEdit(
 
     const inputBuffer = await readFile(effectiveInputPath);
     let current = sharp(inputBuffer, { failOn: "none" });
-
-    for (const operation of spec.operations) {
-      current = await applyOperation(current, operation, baseDir);
-    }
+    current = await applyEditOperations(current, spec.operations, baseDir);
 
     await ensureDirForFile(outputPath);
     await saveSharpOutput(current, spec, outputPath);
@@ -244,6 +241,19 @@ export async function runEdit(
       await rm(tempDownload.tempDir, { recursive: true, force: true });
     }
   }
+}
+
+export async function applyEditOperations(
+  current: Sharp,
+  operations: EditOperation[],
+  baseDir: string = process.cwd(),
+): Promise<Sharp> {
+  let next = current;
+  for (const operation of operations) {
+    next = await applyOperation(next, operation, baseDir);
+  }
+
+  return next;
 }
 
 async function applyOperation(

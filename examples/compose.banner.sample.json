@@ -1,0 +1,78 @@
+{
+  "width": 1600,
+  "height": 900,
+  "output": "../out/banner-layered.png",
+  "format": "png",
+  "background": {
+    "color": "#f4efe7"
+  },
+  "layers": [
+    {
+      "type": "rect",
+      "width": 560,
+      "height": 900,
+      "fill": "#121212",
+      "gravity": "west"
+    },
+    {
+      "type": "image",
+      "inputUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg",
+      "width": 760,
+      "height": 760,
+      "left": 790,
+      "top": 80,
+      "operations": [
+        {
+          "op": "removeBackground"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "value": "Layered Banner",
+      "left": 64,
+      "top": 110,
+      "width": 420,
+      "height": 120,
+      "fontSize": 72,
+      "fontWeight": "800",
+      "color": "#ffffff",
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "value": "Background + product cutout + headline + supporting card",
+      "left": 64,
+      "top": 250,
+      "width": 420,
+      "height": 140,
+      "fontSize": 28,
+      "fontWeight": "500",
+      "color": "rgba(255,255,255,0.88)",
+      "align": "left"
+    },
+    {
+      "type": "rect",
+      "width": 360,
+      "height": 110,
+      "left": 64,
+      "top": 660,
+      "fill": "rgba(255,255,255,0.16)",
+      "radius": 18,
+      "stroke": "rgba(255,255,255,0.28)",
+      "strokeWidth": 2
+    },
+    {
+      "type": "text",
+      "value": "SALE KIT\ntransparent layer workflow",
+      "left": 92,
+      "top": 685,
+      "width": 300,
+      "height": 70,
+      "fontSize": 24,
+      "fontWeight": "700",
+      "color": "#ffffff",
+      "align": "left"
+    }
+  ]
+}

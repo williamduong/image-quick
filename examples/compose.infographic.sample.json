@@ -1,0 +1,121 @@
+{
+  "width": 1080,
+  "height": 1350,
+  "output": "../out/infographic-layered.png",
+  "format": "png",
+  "background": {
+    "color": "#fffaf3"
+  },
+  "layers": [
+    {
+      "type": "rect",
+      "width": 980,
+      "height": 1240,
+      "gravity": "center",
+      "fill": "#ffffff",
+      "radius": 36,
+      "stroke": "#eadfcf",
+      "strokeWidth": 4
+    },
+    {
+      "type": "text",
+      "value": "Layered Infographic",
+      "left": 90,
+      "top": 100,
+      "width": 520,
+      "height": 90,
+      "fontSize": 54,
+      "fontWeight": "800",
+      "color": "#1f1a17",
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "value": "Build complex non-art visuals from reusable transparent layers",
+      "left": 90,
+      "top": 190,
+      "width": 520,
+      "height": 120,
+      "fontSize": 24,
+      "fontWeight": "500",
+      "color": "#5f564e",
+      "align": "left"
+    },
+    {
+      "type": "image",
+      "inputUrl": "https://api.iconify.design/lucide/layers.svg",
+      "width": 120,
+      "height": 120,
+      "left": 820,
+      "top": 110,
+      "tint": "#d45d3b"
+    },
+    {
+      "type": "rect",
+      "width": 900,
+      "height": 170,
+      "left": 90,
+      "top": 390,
+      "fill": "#f6efe4",
+      "radius": 26
+    },
+    {
+      "type": "text",
+      "value": "1. Background layer",
+      "left": 130,
+      "top": 435,
+      "width": 280,
+      "height": 50,
+      "fontSize": 30,
+      "fontWeight": "800",
+      "color": "#1f1a17",
+      "align": "left"
+    },
+    {
+      "type": "text",
+      "value": "2. Product cutout layer\n3. Badge / UI chip layer\n4. Text overlays",
+      "left": 130,
+      "top": 495,
+      "width": 380,
+      "height": 90,
+      "fontSize": 22,
+      "fontWeight": "500",
+      "color": "#5f564e",
+      "align": "left"
+    },
+    {
+      "type": "image",
+      "inputUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg",
+      "width": 300,
+      "height": 300,
+      "left": 640,
+      "top": 720,
+      "operations": [
+        {
+          "op": "removeBackground"
+        }
+      ]
+    },
+    {
+      "type": "rect",
+      "width": 300,
+      "height": 74,
+      "left": 120,
+      "top": 1080,
+      "fill": "#d45d3b",
+      "radius": 999
+    },
+    {
+      "type": "text",
+      "value": "COMPOSE FIRST",
+      "left": 165,
+      "top": 1098,
+      "width": 210,
+      "height": 34,
+      "fontSize": 24,
+      "fontWeight": "800",
+      "color": "#ffffff",
+      "align": "center"
+    }
+  ]
+}

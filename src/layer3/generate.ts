@@ -1,3 +1,4 @@
+import { openAsBlob } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
@@ -117,6 +118,9 @@ export interface GenerateSpec extends PromptHarness {
   variantId?: string;
   templateLabel?: string;
   templateVariables?: Record<string, string | number | boolean>;
+  inputImages?: string[];
+  inputImageUrls?: string[];
+  inputFidelity?: "low" | "high";
 }
 
 export async function runGenerateSpec(
@@ -126,9 +130,11 @@ export async function runGenerateSpec(
   const absoluteSpecPath = resolve(specPath);
   const spec = await readJsonFile<GenerateSpec>(absoluteSpecPath);
   const outputPath = resolve(dirname(absoluteSpecPath), spec.output);
+  const specDir = dirname(absoluteSpecPath);
   return runGenerate(
     {
       ...spec,
+      inputImages: spec.inputImages?.map((imagePath) => resolve(specDir, imagePath)),
       ...overrides,
     },
     outputPath,
@@ -271,8 +277,13 @@ async function generateWithOpenAi(
   }
 
   const outputFormat = detectOutputFormat(outputPath);
+  const requestedModel = spec.model ?? "gpt-image-1.5";
+  const editMode = Boolean(spec.inputImages?.length || spec.inputImageUrls?.length);
+  const requestModel = editMode
+    ? resolveOpenAiEditModel(requestedModel)
+    : requestedModel;
   const requestBody = {
-    model: spec.model ?? "gpt-image-1.5",
+    model: requestModel,
     prompt,
     size: spec.size ?? "1024x1024",
     quality: spec.quality ?? "medium",
@@ -283,14 +294,16 @@ async function generateWithOpenAi(
     n: spec.n ?? 1,
   };
 
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
+  const response = editMode
+    ? await submitOpenAiEditRequest(apiKey, requestBody, spec)
+    : await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
   const payload = (await response.json()) as OpenAiImageResponse & {
     error?: { message?: string };
@@ -319,6 +332,52 @@ async function generateWithOpenAi(
     request: requestBody,
     revisedPrompt: first.revised_prompt,
   };
+}
+
+async function submitOpenAiEditRequest(
+  apiKey: string,
+  requestBody: OpenAiGenerationResult["request"],
+  spec: GenerateSpec,
+): Promise<Response> {
+  const formData = new FormData();
+  formData.set("model", requestBody.model);
+  formData.set("prompt", requestBody.prompt);
+  formData.set("size", requestBody.size);
+  formData.set("quality", requestBody.quality);
+  formData.set("output_format", requestBody.output_format);
+  formData.set("moderation", requestBody.moderation);
+  formData.set("n", String(requestBody.n));
+
+  if (requestBody.background) {
+    formData.set("background", requestBody.background);
+  }
+
+  if (requestBody.output_compression !== undefined) {
+    formData.set("output_compression", String(requestBody.output_compression));
+  }
+
+  if (spec.inputFidelity) {
+    formData.set("input_fidelity", spec.inputFidelity);
+  }
+
+  for (const imagePath of spec.inputImages ?? []) {
+    const blob = await openAsBlob(imagePath, {
+      type: detectMimeType(imagePath),
+    });
+    formData.append("image[]", blob, fileNameFromPath(imagePath));
+  }
+
+  for (const imageUrl of spec.inputImageUrls ?? []) {
+    formData.append("image_url[]", imageUrl);
+  }
+
+  return fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
 }
 
 async function generateWithGoogleGemini(
@@ -616,6 +675,33 @@ function resolveGenerationProvider(spec: GenerateSpec): ImageProviderId {
   }
 
   return "openai";
+}
+
+function resolveOpenAiEditModel(model: string): string {
+  const supportedEditModels = new Set([
+    "gpt-image-1-mini",
+    "gpt-image-1.5",
+  ]);
+
+  return supportedEditModels.has(model) ? model : "gpt-image-1.5";
+}
+
+function fileNameFromPath(filePath: string): string {
+  return filePath.replace(/^.*[\\/]/, "");
+}
+
+function detectMimeType(filePath: string): string {
+  const extension = extname(filePath).toLowerCase();
+  switch (extension) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".webp":
+      return "image/webp";
+    case ".png":
+    default:
+      return "image/png";
+  }
 }
 
 function toGoogleAspectRatio(size: string | undefined): string {

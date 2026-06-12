@@ -13,6 +13,8 @@ import {
   downloadOpenverseImage,
   searchOpenverse,
 } from "./providers/openverse.js";
+import { listAssetSources } from "./providers/sourceRegistry.js";
+import { runComposeSpec } from "./layer2/composePipeline.js";
 import { runEditSpec } from "./layer2/editPipeline.js";
 import { runGenerate, runGenerateSpec } from "./layer3/generate.js";
 import {
@@ -29,6 +31,10 @@ import {
   listRegisteredModels,
   type ImageProviderId,
 } from "./layer3/modelRegistry.js";
+import {
+  runCatalogProductPhotoAutoFix,
+  runCatalogProductPhotoQa,
+} from "./qa/catalogProductPhotoQa.js";
 import {
   GENERATION_TIERS,
   isGenerationTier,
@@ -216,6 +222,17 @@ templateCommand
     }, null, 2));
   });
 
+const sourceCommand = program
+  .command("source")
+  .description("List free asset sources and integration status");
+
+sourceCommand
+  .command("list")
+  .description("List built-in and recommended asset sources")
+  .action(() => {
+    console.log(JSON.stringify(listAssetSources(), null, 2));
+  });
+
 const search = program.command("search").description("Layer 1 asset search");
 
 search
@@ -273,6 +290,56 @@ fetchCommand
   });
 
 program
+  .command("compose")
+  .description("Compose a multi-layer image from a JSON spec")
+  .requiredOption("-s, --spec <path>", "Path to compose spec JSON")
+  .action(async (options: { spec: string }) => {
+    const output = await runComposeSpec(options.spec);
+    console.log(JSON.stringify({ output }, null, 2));
+  });
+
+const qaCommand = program
+  .command("qa")
+  .description("Run quality checks for production image presets");
+
+qaCommand
+  .command("catalog-product-photo")
+  .description("Check a product packshot against catalog QA rules")
+  .requiredOption("-i, --image <path>", "Image path")
+  .option("-o, --out <path>", "Write QA report JSON to a file")
+  .option("--auto-fix", "Auto-fix background framing issues with ImageMagick when QA fails")
+  .option("--fixed-out <path>", "Output path for the auto-fixed image")
+  .option("--fix-report-out <path>", "Write auto-fix result JSON to a file")
+  .option("--include-warn", "Also auto-fix warn-level background/margin issues")
+  .option("--force-fix", "Run auto-fix even if the targeted QA checks did not fail")
+  .action(async (options: {
+    image: string;
+    out?: string;
+    autoFix?: boolean;
+    fixedOut?: string;
+    fixReportOut?: string;
+    includeWarn?: boolean;
+    forceFix?: boolean;
+  }) => {
+    const report = await runCatalogProductPhotoQa(options.image, options.out);
+    if (!options.autoFix) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+
+    const autoFix = await runCatalogProductPhotoAutoFix(options.image, {
+      outPath: options.fixedOut,
+      reportOutPath: options.fixReportOut,
+      includeWarn: options.includeWarn,
+      force: options.forceFix,
+    });
+    console.log(JSON.stringify({
+      report,
+      autoFix,
+    }, null, 2));
+  });
+
+program
   .command("edit")
   .description("Layer 2 image edits from a JSON spec")
   .requiredOption("-s, --spec <path>", "Path to edit spec JSON")
@@ -298,6 +365,9 @@ program
   .option("-o, --out <path>", "Output image path when using a template")
   .option("--input <path>", "Path to a JSON file with template variables")
   .option("--asset-url <url>", "Direct remote asset URL for asset-only flow")
+  .option("--reference-image <path>", "Local reference image to guide AI polish/edit", collectString, [])
+  .option("--reference-image-url <url>", "Remote reference image URL to guide AI polish/edit", collectString, [])
+  .option("--input-fidelity <level>", "Reference-image fidelity for OpenAI edits: low | high")
   .option("--var <key=value>", "Template variable override", collectKeyValue, [])
   .action(async (options: {
     spec?: string;
@@ -308,6 +378,9 @@ program
     out?: string;
     input?: string;
     assetUrl?: string;
+    referenceImage: string[];
+    referenceImageUrl: string[];
+    inputFidelity?: string;
     var: Array<[string, string | number | boolean]>;
   }) => {
     const tier = parseTierOption(options.tier);
@@ -331,14 +404,11 @@ program
       ? await readJsonFile<Record<string, string | number | boolean>>(options.input)
       : {};
     const cliVariables = Object.fromEntries(options.var);
-    const outputPath =
-      options.out ??
-      await buildDefaultOutputPath(options.template, options.variant, tier);
     const compiled = await compileTemplate({
       templateId: options.template,
       variantId: options.variant,
       tier,
-      output: outputPath,
+      output: options.out ?? "__image_quick_auto_output__.png",
       overrides: provider ? { provider } : undefined,
       variables: {
         ...fileVariables,
@@ -346,6 +416,26 @@ program
         ...(options.assetUrl ? { assetUrl: options.assetUrl } : {}),
       },
     });
+    if (options.referenceImage.length > 0) {
+      compiled.spec.inputImages = options.referenceImage.map((imagePath) => resolve(imagePath));
+    }
+    if (options.referenceImageUrl.length > 0) {
+      compiled.spec.inputImageUrls = [...options.referenceImageUrl];
+    }
+    if (options.inputFidelity === "low" || options.inputFidelity === "high") {
+      compiled.spec.inputFidelity = options.inputFidelity;
+    } else if (options.inputFidelity) {
+      throw new Error(`Invalid --input-fidelity value "${options.inputFidelity}". Expected low or high.`);
+    }
+    const outputPath =
+      options.out ??
+      await buildDefaultOutputPath({
+        templateId: options.template,
+        variantId: options.variant,
+        tier,
+        size: compiled.spec.size,
+      });
+    compiled.spec.output = outputPath;
     const output = await runGenerate(compiled.spec, resolve(outputPath));
     console.log(JSON.stringify({
       output,
@@ -377,6 +467,14 @@ function collectKeyValue(
   return previous;
 }
 
+function collectString(
+  value: string,
+  previous: string[],
+): string[] {
+  previous.push(value);
+  return previous;
+}
+
 function parseMaybePrimitive(value: string): string | number | boolean {
   if (value === "true") {
     return true;
@@ -394,25 +492,25 @@ function parseMaybePrimitive(value: string): string | number | boolean {
   return value;
 }
 
-async function buildDefaultOutputPath(
-  templateId: string,
-  variantId?: string,
-  tier?: GenerationTier,
-): Promise<string> {
+async function buildDefaultOutputPath(input: {
+  templateId: string;
+  variantId?: string;
+  tier?: GenerationTier;
+  size?: string;
+}): Promise<string> {
   const settings = await readSettings();
   const outputDir =
     settings.outputDir?.trim() ||
-    process.env.IMAGE_QUICK_OUTPUT_DIR?.trim() ||
-    "out";
-  const stamp = new Date()
-    .toISOString()
-    .replaceAll(":", "")
-    .replaceAll(".", "")
-    .replace("T", "-")
-    .replace("Z", "");
-  const variantPart = variantId ? `-${slugify(variantId)}` : "";
-  const tierPart = tier ? `-${slugify(tier)}` : "";
-  return `${outputDir}/${slugify(templateId)}${variantPart}${tierPart}-${stamp}.png`;
+    process.env.IMAGE_QUICK_OUTPUT_DIR?.trim();
+  const fileName = [
+    slugify(input.templateId),
+    buildShortDescriptor(input.variantId, input.tier),
+    normalizeSizeToken(input.size),
+    formatFileTimestamp(new Date()),
+  ]
+    .filter(Boolean)
+    .join("-") + ".png";
+  return outputDir ? `${outputDir}/${fileName}` : fileName;
 }
 
 function slugify(value: string): string {
@@ -421,6 +519,40 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
+}
+
+function buildShortDescriptor(
+  variantId?: string,
+  tier?: GenerationTier,
+): string | undefined {
+  const parts = [
+    variantId ? slugify(variantId) : undefined,
+    tier ? slugify(tier) : undefined,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join("-") : undefined;
+}
+
+function normalizeSizeToken(size: string | undefined): string | undefined {
+  if (!size) {
+    return undefined;
+  }
+
+  const normalized = size.trim().toLowerCase();
+  return /^\d+x\d+$/.test(normalized)
+    ? normalized
+    : slugify(normalized);
+}
+
+function formatFileTimestamp(date: Date): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
+  return `${year}${month}${day}-${hours}${minutes}${seconds}${milliseconds}`;
 }
 
 function parseTierOption(value: string | undefined): GenerationTier | undefined {
