@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 import { Command } from "commander";
 
-import { APP_NAME, APP_VERSION, DEFAULT_OPENAI_IMAGE_MODEL } from "./config.js";
+import { APP_NAME, APP_VERSION } from "./config.js";
 import {
   downloadIconifyIcon,
   searchIconify,
@@ -23,12 +23,24 @@ import {
   loadTemplate,
   loadVariant,
 } from "./layer3/templates.js";
+import {
+  getProviderApiKey,
+  isImageProvider,
+  listImageProviders,
+  listRegisteredModels,
+  type ImageProviderId,
+} from "./layer3/modelRegistry.js";
+import {
+  GENERATION_TIERS,
+  isGenerationTier,
+  type GenerationTier,
+} from "./layer3/tiers.js";
 import { readJsonFile, writeJsonFile } from "./utils/fs.js";
 import { runCommand } from "./utils/process.js";
 
 const program = new Command();
 
-program.name(APP_NAME).description("Three-layer image workflow CLI").version(APP_VERSION);
+program.name(APP_NAME).description("Tiered image workflow CLI").version(APP_VERSION);
 
 program
   .command("doctor")
@@ -58,11 +70,51 @@ program
       }),
     );
 
+    const providers = listImageProviders().map((provider) => ({
+      id: provider.id,
+      label: provider.label,
+      status: provider.status,
+      apiKeyEnv: provider.apiKeyEnv,
+      apiKeyPresent: Boolean(getProviderApiKey(provider.id)),
+    }));
+
     console.log(JSON.stringify({
-      openAiImageModel: DEFAULT_OPENAI_IMAGE_MODEL,
-      openAiApiKeyPresent: Boolean(process.env.OPENAI_API_KEY),
+      providers,
       tools: results,
     }, null, 2));
+  });
+
+program
+  .command("provider")
+  .description("Inspect supported image providers")
+  .command("list")
+  .description("List provider registry entries")
+  .action(() => {
+    console.log(JSON.stringify(listImageProviders(), null, 2));
+  });
+
+program
+  .command("model")
+  .description("Inspect registered image models")
+  .command("list")
+  .option("--provider <provider>", "Filter by provider")
+  .action((options: { provider?: string }) => {
+    if (options.provider && !isImageProvider(options.provider)) {
+      throw new Error(`Unknown provider: ${options.provider}`);
+    }
+
+    const models = listRegisteredModels()
+      .filter((entry) => !options.provider || entry.provider === options.provider)
+      .map((entry) => ({
+        provider: entry.provider,
+        id: entry.id,
+        label: entry.label,
+        commercialTier: entry.commercialTier,
+        defaultTier: entry.defaultTier,
+        adapter: entry.adapter,
+        preferredSize: entry.preferredSize,
+      }));
+    console.log(JSON.stringify(models, null, 2));
   });
 
 const templateCommand = program
@@ -163,10 +215,15 @@ program
 
 program
   .command("generate")
-  .description("Layer 3 AI image generation from a JSON harness or template")
+  .description("Generate images from a JSON harness or template with optional tier routing")
   .option("-s, --spec <path>", "Path to generation spec JSON")
   .option("-t, --template <id>", "Template id")
   .option("--variant <id>", "Template variant id")
+  .option(
+    "--tier <tier>",
+    `Execution tier: ${GENERATION_TIERS.join(" | ")}`,
+  )
+  .option("--provider <provider>", "Image provider id from `provider list`")
   .option("-o, --out <path>", "Output image path when using a template")
   .option("--input <path>", "Path to a JSON file with template variables")
   .option("--var <key=value>", "Template variable override", collectKeyValue, [])
@@ -174,12 +231,20 @@ program
     spec?: string;
     template?: string;
     variant?: string;
+    tier?: string;
+    provider?: string;
     out?: string;
     input?: string;
     var: Array<[string, string | number | boolean]>;
   }) => {
+    const tier = parseTierOption(options.tier);
+    const provider = parseProviderOption(options.provider);
+
     if (options.spec) {
-      const output = await runGenerateSpec(options.spec);
+      const output = await runGenerateSpec(options.spec, {
+        tier,
+        provider,
+      });
       console.log(JSON.stringify({ output }, null, 2));
       return;
     }
@@ -194,11 +259,13 @@ program
     const cliVariables = Object.fromEntries(options.var);
     const outputPath =
       options.out ??
-      buildDefaultOutputPath(options.template, options.variant);
+      buildDefaultOutputPath(options.template, options.variant, tier);
     const compiled = await compileTemplate({
       templateId: options.template,
       variantId: options.variant,
+      tier,
       output: outputPath,
+      overrides: provider ? { provider } : undefined,
       variables: {
         ...fileVariables,
         ...cliVariables,
@@ -209,6 +276,7 @@ program
       output,
       template: compiled.template.id,
       variant: compiled.variant?.id,
+      tier: compiled.tier,
       variables: compiled.variables,
     }, null, 2));
   });
@@ -251,7 +319,11 @@ function parseMaybePrimitive(value: string): string | number | boolean {
   return value;
 }
 
-function buildDefaultOutputPath(templateId: string, variantId?: string): string {
+function buildDefaultOutputPath(
+  templateId: string,
+  variantId?: string,
+  tier?: GenerationTier,
+): string {
   const outputDir = process.env.IMAGE_QUICK_OUTPUT_DIR?.trim() || "out";
   const stamp = new Date()
     .toISOString()
@@ -260,7 +332,8 @@ function buildDefaultOutputPath(templateId: string, variantId?: string): string 
     .replace("T", "-")
     .replace("Z", "");
   const variantPart = variantId ? `-${slugify(variantId)}` : "";
-  return `${outputDir}/${slugify(templateId)}${variantPart}-${stamp}.png`;
+  const tierPart = tier ? `-${slugify(tier)}` : "";
+  return `${outputDir}/${slugify(templateId)}${variantPart}${tierPart}-${stamp}.png`;
 }
 
 function slugify(value: string): string {
@@ -269,4 +342,30 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
+}
+
+function parseTierOption(value: string | undefined): GenerationTier | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (!isGenerationTier(value)) {
+    throw new Error(
+      `Invalid --tier value "${value}". Expected one of: ${GENERATION_TIERS.join(", ")}`,
+    );
+  }
+
+  return value;
+}
+
+function parseProviderOption(value: string | undefined): ImageProviderId | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (!isImageProvider(value)) {
+    throw new Error(`Invalid --provider value "${value}"`);
+  }
+
+  return value;
 }

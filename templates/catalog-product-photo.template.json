@@ -1,0 +1,181 @@
+{
+  "id": "catalog-product-photo",
+  "label": "Catalog Product Photo",
+  "description": "Operational packshot template for supermarket, retail catalog, and ecommerce product photography.",
+  "defaults": {
+    "provider": "openai",
+    "size": "2048x2048",
+    "background": "opaque",
+    "moderation": "auto",
+    "n": 1
+  },
+  "slotDefaults": {
+    "brand": "Generic",
+    "packaging": "None",
+    "primaryColor": "neutral",
+    "cameraAngle": "45-degree front view",
+    "assetQuery": ""
+  },
+  "slots": {
+    "required": [
+      {
+        "name": "productName",
+        "description": "Exact retail product name or plain product description"
+      },
+      {
+        "name": "category",
+        "description": "Top-level product category such as Beverage or Fresh Produce"
+      },
+      {
+        "name": "productType",
+        "description": "Specific product type such as Fruit or Soft Drink"
+      }
+    ],
+    "optional": [
+      {
+        "name": "brand",
+        "description": "Brand shown on the product"
+      },
+      {
+        "name": "packaging",
+        "description": "Packaging type such as Bag, Aluminum Can, Plastic Jug"
+      },
+      {
+        "name": "primaryColor",
+        "description": "Main visible product or packaging color"
+      },
+      {
+        "name": "cameraAngle",
+        "description": "Preferred product view angle"
+      },
+      {
+        "name": "assetQuery",
+        "description": "Optional asset-search query override for asset-only mode"
+      },
+      {
+        "name": "openverseId",
+        "description": "Optional exact Openverse image id to pin a known asset in asset-only mode"
+      }
+    ]
+  },
+  "prompt": {
+    "promptTemplate": "Professional supermarket catalog photography for {{productName}}.",
+    "fragments": {
+      "subject": "one product only: {{productName}}, category {{category}}, type {{productType}}, brand {{brand}}, packaging {{packaging}}",
+      "style": "commercial retail photography, supermarket catalog style, ecommerce ready, photorealistic, highly consistent across a large product set",
+      "composition": "centered single product, occupies about 75 percent of frame, around 10 percent safe margin, 1:1 square composition, {{cameraAngle}}",
+      "lighting": "soft studio lighting, 5500K daylight white balance, minimal natural shadow",
+      "color": "accurate product color reproduction, natural appearance, primary color emphasis on {{primaryColor}}, sRGB delivery, no HDR, no artistic filter, no oversaturation",
+      "background": "pure white background #FFFFFF",
+      "additional": [
+        "show the actual retail product customers would purchase",
+        "packaging must match the product category",
+        "realistic proportions and materials",
+        "clean, undamaged, shelf-ready appearance",
+        "PNG output, 2048x2048 resolution"
+      ],
+      "constraints": [
+        "consistent packshot quality across many SKUs",
+        "clear silhouette",
+        "retail-ready framing",
+        "no watermark",
+        "no overlay graphics"
+      ],
+      "negative": [
+        "text overlays",
+        "watermarks",
+        "promotional graphics",
+        "price tags",
+        "background objects",
+        "people",
+        "hands",
+        "decorative props",
+        "dramatic lighting",
+        "cartoon style",
+        "illustration style",
+        "CGI look",
+        "blurry details",
+        "noise"
+      ]
+    }
+  },
+  "tiers": {
+    "asset-only": {
+      "assetWorkflow": {
+        "provider": "openverse",
+        "queryTemplate": "{{assetQuery}} {{productName}} {{productType}} {{primaryColor}} isolated product photo",
+        "edit": {
+          "format": "png",
+          "operations": [
+            {
+              "op": "removeBackground"
+            },
+            {
+              "op": "imagemagick",
+              "args": [
+                "{{input}}",
+                "-trim",
+                "+repage",
+                "-resize",
+                "1536x1536",
+                "-gravity",
+                "center",
+                "-background",
+                "#FFFFFF",
+                "-extent",
+                "2048x2048",
+                "-colorspace",
+                "sRGB",
+                "{{output}}"
+              ]
+            }
+          ]
+        }
+      },
+      "notes": [
+        "Asset-only mode depends on what open-license source material exists and works best for generic or commodity products."
+      ]
+    },
+    "ai-mini": {
+      "defaults": {
+        "quality": "low"
+      },
+      "prompt": {
+        "fragments": {
+          "constraints": [
+            "prefer simple, clean packshot geometry over dramatic styling"
+          ]
+        }
+      }
+    },
+    "ai-standard": {
+      "defaults": {
+        "quality": "medium"
+      },
+      "prompt": {
+        "fragments": {
+          "constraints": [
+            "strong packaging fidelity and consistent shelf-ready presentation"
+          ]
+        }
+      }
+    },
+    "ai-premium": {
+      "defaults": {
+        "quality": "high"
+      },
+      "prompt": {
+        "fragments": {
+          "constraints": [
+            "highest material realism and packaging fidelity suitable for industrial-scale catalog production"
+          ]
+        }
+      }
+    }
+  },
+  "policies": {
+    "notes": [
+      "For exact branded packaging, asset-only mode can only adapt assets that already exist in open-license libraries."
+    ]
+  }
+}

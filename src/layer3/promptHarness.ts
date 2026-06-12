@@ -78,9 +78,9 @@ export function resolvePromptHarness(
 ): PromptHarness {
   return {
     ...harness,
-    prompt: harness.prompt ? interpolateTemplate(harness.prompt, variables) : undefined,
+    prompt: harness.prompt ? renderTemplateString(harness.prompt, variables) : undefined,
     promptTemplate: harness.promptTemplate
-      ? interpolateTemplate(harness.promptTemplate, variables)
+      ? renderTemplateString(harness.promptTemplate, variables)
       : undefined,
     variables: {
       ...(harness.variables ?? {}),
@@ -133,7 +133,7 @@ export function mergePromptHarness(
   };
 }
 
-function interpolateTemplate(
+export function renderTemplateString(
   template: string,
   variables: Record<string, string | number | boolean>,
 ): string {
@@ -147,12 +147,12 @@ function maybeInterpolate(
   value: string | undefined,
   variables: Record<string, string | number | boolean>,
 ): string | undefined {
-  return value === undefined ? undefined : interpolateTemplate(value, variables);
+  return value === undefined ? undefined : renderTemplateString(value, variables);
 }
 
 function interpolateStringArray(
   values: string[] | undefined,
   variables: Record<string, string | number | boolean>,
 ): string[] | undefined {
-  return values?.map((value) => interpolateTemplate(value, variables));
+  return values?.map((value) => renderTemplateString(value, variables));
 }

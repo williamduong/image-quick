@@ -1,7 +1,7 @@
 {
   "name": "image-quick",
   "version": "0.1.0",
-  "description": "Three-layer image workflow CLI: open-licensed asset pull, non-destructive edits, and AI generation.",
+  "description": "Tiered image workflow CLI for open-license asset sourcing, repeatable edits, and AI image generation.",
   "license": "MIT",
   "author": "williamduong <duongtannghia@gmail.com>",
   "keywords": [

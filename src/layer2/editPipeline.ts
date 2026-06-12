@@ -158,7 +158,7 @@ interface GrayscaleOp extends BaseOp {
   op: "grayscale";
 }
 
-type EditOperation =
+export type EditOperation =
   | ResizeOp
   | ExtractOp
   | RotateOp
@@ -188,13 +188,20 @@ export async function runEditSpec(specPath: string): Promise<string> {
   const absoluteSpecPath = resolve(specPath);
   const specDir = dirname(absoluteSpecPath);
   const spec = await readJsonFile<EditSpec>(absoluteSpecPath);
-  const inputPath = resolveFrom(specDir, spec.input);
-  const outputPath = resolveFrom(specDir, spec.output);
+  return runEdit(spec, specDir);
+}
 
-  let current = sharp(inputPath, { failOn: "none" });
+export async function runEdit(
+  spec: EditSpec,
+  baseDir: string = process.cwd(),
+): Promise<string> {
+  const inputPath = resolveFrom(baseDir, spec.input);
+  const outputPath = resolveFrom(baseDir, spec.output);
+  const inputBuffer = await readFile(inputPath);
+  let current = sharp(inputBuffer, { failOn: "none" });
 
   for (const operation of spec.operations) {
-    current = await applyOperation(current, operation, specDir);
+    current = await applyOperation(current, operation, baseDir);
   }
 
   await ensureDirForFile(outputPath);

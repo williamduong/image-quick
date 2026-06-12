@@ -1,10 +1,10 @@
 # image-quick
 
-`image-quick` is a TypeScript CLI for a three-layer image workflow:
+`image-quick` is a TypeScript CLI for a tiered image workflow:
 
 1. Pull open-license assets such as photos and icons.
 2. Make light, repeatable edits through a JSON pipeline.
-3. Generate original images from an AI prompt harness.
+3. Generate with cheaper or stronger AI tiers from the same template.
 
 The goal is to keep one practical toolchain for sourcing, adapting, and generating visuals without losing license metadata or prompt history.
 
@@ -18,7 +18,9 @@ The goal is to keep one practical toolchain for sourcing, adapting, and generati
   - Optional background removal through `rembg`
   - Optional escape hatch into raw `ImageMagick`
 - Layer 3 generates:
-  - OpenAI Images API requests built from a reusable prompt harness
+  - Provider/model selection from a hardcoded registry in code
+  - OpenAI and Google Gemini adapters wired into the CLI today
+  - Tier routing: `asset-only`, `ai-mini`, `ai-standard`, `ai-premium`
 
 Every fetched, edited, or generated file gets a sidecar JSON file so provenance is preserved:
 
@@ -34,7 +36,7 @@ Every fetched, edited, or generated file gets a sidecar JSON file so provenance 
   - `magick` from ImageMagick
   - `rembg`
 - Optional for layer 3:
-  - `OPENAI_API_KEY`
+  - Provider API keys such as `OPENAI_API_KEY` or `GOOGLE_API_KEY`
 
 ## Setup
 
@@ -63,6 +65,13 @@ Check that optional tools are available:
 
 ```bash
 npm run doctor
+```
+
+Inspect the provider and model registry that the CLI uses:
+
+```bash
+npx tsx src/cli.ts provider list
+npx tsx src/cli.ts model list
 ```
 
 ## Project layout
@@ -151,6 +160,32 @@ npx tsx src/cli.ts generate \
   --var cta="Shop now"
 ```
 
+Generate from the same template with a chosen quality/cost tier:
+
+```bash
+npx tsx src/cli.ts generate \
+  --template catalog-product-photo \
+  --tier asset-only \
+  --input examples/catalog-product-photo.variables.json
+```
+
+```bash
+npx tsx src/cli.ts generate \
+  --template catalog-product-photo \
+  --tier ai-mini \
+  --input examples/catalog-product-photo.variables.json
+```
+
+Pick a specific provider while keeping the same tier abstraction:
+
+```bash
+npx tsx src/cli.ts generate \
+  --template catalog-product-photo \
+  --tier ai-premium \
+  --provider google-gemini \
+  --input examples/catalog-product-photo.variables.json
+```
+
 If `--out` is omitted, the CLI creates a timestamped filename under `out/`, for example:
 
 ```text
@@ -192,6 +227,7 @@ The template system adds a more production-friendly flow:
 
 - `template` holds reusable visual rules and defaults
 - `variant` adjusts a template for one channel or use case
+- `tier` changes the rendering strategy without changing the business template
 - runtime `--var key=value` fills content slots without exposing every low-level rule
 - each run stores the resolved prompt and request payload in `*.prompt.json`
 - bundled starter templates ship with the npm package so users can test immediately after install
@@ -204,6 +240,44 @@ Bundled starter templates:
 - `blog-image`
 - `social-post`
 - `thumbnail`
+- `catalog-product-photo`
+
+Tier behavior:
+
+- `asset-only`: no API key required; fetches open-license assets and normalizes them through the edit pipeline
+- `ai-mini`: cheapest AI path for the chosen provider
+- `ai-standard`: mid-tier AI path for the chosen provider
+- `ai-premium`: strongest AI path for the chosen provider
+
+Current hardcoded registry:
+
+- `openai`
+  - `ai-mini` -> `gpt-image-1-mini`
+  - `ai-standard` -> `gpt-image-1.5`
+  - `ai-premium` -> `gpt-image-2`
+- `google-gemini`
+  - `ai-mini` -> `gemini-2.5-flash-image`
+  - `ai-standard` -> `gemini-3.1-flash-image`
+  - `ai-premium` -> `gemini-3-pro-image`
+- `fal`
+  - Registry only for now, with starter mappings such as `fal-ai/flux/schnell`, `fal-ai/flux/dev`, `fal-ai/flux-pro/v1.1`
+- `stability`
+  - Registry only for now, with starter mappings such as `stable-image/core`, `stable-image/sd3.5-medium`, `stable-image/ultra`
+- `replicate`
+  - Registry only for now, with starter mappings such as `black-forest-labs/flux-1.1-pro`, `google/imagen-4-ultra`, `ideogram-ai/ideogram-v3-turbo`
+
+For deterministic asset-only runs in production, you can pass an `openverseId` variable to pin a specific source asset and skip search entirely.
+
+Registry location:
+
+- [src/layer3/modelRegistry.ts](src/layer3/modelRegistry.ts)
+
+That file is the single place to maintain provider labels, API-key env names, model ids, and cheap/mid/premium defaults. `.env` is now only for secrets and local machine overrides.
+
+On Windows, if `magick` or `rembg` are installed but not on `PATH`, you can also point the CLI at them with:
+
+- `IMAGE_QUICK_MAGICK_COMMAND`
+- `IMAGE_QUICK_REMBG_COMMAND`
 
 Useful fragments include:
 
@@ -245,3 +319,7 @@ If you want to turn this into a fuller product, the natural next steps are:
 - ImageMagick CLI: https://imagemagick.org/command-line-options/
 - rembg: https://github.com/danielgatis/rembg
 - OpenAI image generation: https://developers.openai.com/api/docs/guides/image-generation
+- Google Gemini image generation: https://ai.google.dev/gemini-api/docs/image-generation
+- fal image generation API: https://fal.ai/docs/model-api-reference/image-generation-api/overview
+- Stability AI API: https://platform.stability.ai/docs/api-reference
+- Replicate official models: https://replicate.com/docs/topics/models/official-models
