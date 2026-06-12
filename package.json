@@ -1,0 +1,28 @@
+{
+  "name": "image-quick",
+  "version": "0.1.0",
+  "description": "Three-layer image workflow CLI: open-licensed asset pull, non-destructive edits, and AI generation.",
+  "type": "module",
+  "bin": {
+    "image-quick": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "doctor": "tsx src/cli.ts doctor"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "dotenv": "^16.6.1",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "tsx": "^4.20.1",
+    "typescript": "^5.8.3"
+  }
+}

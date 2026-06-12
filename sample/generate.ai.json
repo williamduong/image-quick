@@ -1,0 +1,31 @@
+{
+  "provider": "openai",
+  "output": "ai-cat-poster.png",
+  "model": "gpt-image-1-mini",
+  "size": "1024x1024",
+  "quality": "low",
+  "background": "opaque",
+  "promptTemplate": "Create a polished square marketing visual for {{brand}}.",
+  "variables": {
+    "brand": "Image Quick"
+  },
+  "fragments": {
+    "subject": "a calm silver tabby cat beside a creative workstation",
+    "style": "clean editorial illustration, startup landing-page hero, premium but playful",
+    "composition": "clear focal subject with room for title text, centered balanced layout",
+    "lighting": "soft studio lighting",
+    "color": "warm cream, charcoal, muted coral accents",
+    "background": "subtle paper texture",
+    "constraints": [
+      "high legibility",
+      "no watermark",
+      "brand-safe",
+      "single coherent scene"
+    ],
+    "negative": [
+      "blurry details",
+      "garbled text",
+      "distorted anatomy"
+    ]
+  }
+}

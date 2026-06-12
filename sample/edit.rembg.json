@@ -1,0 +1,18 @@
+{
+  "input": "openverse-cat.jpg",
+  "output": "cat-cutout.png",
+  "format": "png",
+  "operations": [
+    {
+      "op": "removeBackground"
+    },
+    {
+      "op": "extend",
+      "top": 48,
+      "bottom": 48,
+      "left": 48,
+      "right": 48,
+      "background": "rgba(0,0,0,0)"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "input": "../out/openverse-cat.jpg",
+  "output": "../out/cat-poster.png",
+  "format": "png",
+  "operations": [
+    {
+      "op": "resize",
+      "width": 1400
+    },
+    {
+      "op": "extend",
+      "top": 80,
+      "bottom": 160,
+      "left": 80,
+      "right": 80,
+      "background": "#f7f2ea"
+    },
+    {
+      "op": "rotate",
+      "angle": -3,
+      "background": "#f7f2ea"
+    },
+    {
+      "op": "modulate",
+      "brightness": 1.05,
+      "saturation": 0.92
+    },
+    {
+      "op": "text",
+      "value": "OPEN CAT DAY",
+      "gravity": "south",
+      "fontSize": 72,
+      "padding": 36,
+      "height": 160,
+      "background": "rgba(255,255,255,0.82)",
+      "color": "#161616",
+      "align": "center"
+    }
+  ]
+}

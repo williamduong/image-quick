@@ -1,0 +1,21 @@
+{
+  "input": "../out/openverse-cat.jpg",
+  "output": "../out/cat-magick.png",
+  "format": "png",
+  "operations": [
+    {
+      "op": "imagemagick",
+      "args": [
+        "{{input}}",
+        "-background",
+        "#f4efe4",
+        "-rotate",
+        "2",
+        "-shadow",
+        "80x4+12+12",
+        "+repage",
+        "{{output}}"
+      ]
+    }
+  ]
+}

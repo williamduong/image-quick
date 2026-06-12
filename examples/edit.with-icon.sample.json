@@ -1,0 +1,32 @@
+{
+  "input": "../out/openverse-cat.jpg",
+  "output": "../out/cat-with-mail-icon.png",
+  "format": "png",
+  "operations": [
+    {
+      "op": "resize",
+      "width": 1280
+    },
+    {
+      "op": "composite",
+      "input": "../out/mail.png",
+      "width": 120,
+      "height": 120,
+      "left": 40,
+      "top": 40,
+      "opacity": 0.96,
+      "tint": "#ffffff"
+    },
+    {
+      "op": "text",
+      "value": "newsletter hero draft",
+      "gravity": "northwest",
+      "left": 190,
+      "top": 48,
+      "fontSize": 44,
+      "color": "#ffffff",
+      "background": "rgba(20,20,20,0.50)",
+      "padding": 18
+    }
+  ]
+}

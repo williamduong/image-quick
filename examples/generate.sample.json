@@ -1,0 +1,31 @@
+{
+  "provider": "openai",
+  "output": "../out/ai-cat-poster.png",
+  "model": "gpt-image-2",
+  "size": "1536x1024",
+  "quality": "medium",
+  "background": "opaque",
+  "promptTemplate": "Create a polished marketing visual for {{brand}}.",
+  "variables": {
+    "brand": "Image Quick"
+  },
+  "fragments": {
+    "subject": "a confident orange cat using a creative design workstation",
+    "style": "clean editorial poster, semi-flat illustration, premium startup campaign",
+    "composition": "wide hero layout with strong focal subject on the right and spacious copy area on the left",
+    "lighting": "soft studio lighting",
+    "color": "warm cream, deep ink, muted coral accents",
+    "background": "paper-like textured backdrop",
+    "constraints": [
+      "high legibility",
+      "no watermark",
+      "no extra fingers",
+      "brand-safe composition"
+    ],
+    "negative": [
+      "blurry details",
+      "messy typography",
+      "low-resolution artifacts"
+    ]
+  }
+}

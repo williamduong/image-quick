@@ -1,0 +1,19 @@
+{
+  "input": "D:\\Source\\tools\\image-quick\\sample\\openverse-cat.jpg",
+  "output": "D:\\Source\\tools\\image-quick\\sample\\cat-cutout.png",
+  "format": "png",
+  "operations": [
+    {
+      "op": "removeBackground"
+    },
+    {
+      "op": "extend",
+      "top": 48,
+      "bottom": 48,
+      "left": 48,
+      "right": 48,
+      "background": "rgba(0,0,0,0)"
+    }
+  ],
+  "generatedAt": "2026-06-12T06:18:19.840Z"
+}
