@@ -1,7 +1,8 @@
 {
   "name": "image-quick",
   "version": "0.2.0",
-  "description": "Tiered image workflow CLI for open-license asset sourcing, repeatable edits, and AI image generation.",
+  "description": "Development workspace for the image-quick CLI.",
+  "private": true,
   "license": "MIT",
   "author": "williamduong <duongtannghia@gmail.com>",
   "keywords": [
@@ -18,23 +19,18 @@
   "bin": {
     "image-quick": "dist/cli.js"
   },
-  "files": [
-    "dist",
-    "templates",
-    "examples",
-    "publish",
-    "README.md",
-    "LICENSE"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "doctor": "tsx src/cli.ts doctor",
     "smoke": "npm run build && node scripts/smoke-tests.mjs",
-    "prepack": "npm run build",
-    "pack:check": "npm pack --dry-run",
-    "publish:check": "npm run smoke && npm publish --dry-run"
+    "release:prepare": "npm run build && node scripts/prepare-release.mjs",
+    "release:pack": "npm run release:prepare && node scripts/run-release-npm.mjs pack --dry-run",
+    "release:check": "npm run smoke && npm run release:prepare && node scripts/run-release-npm.mjs publish --dry-run",
+    "release:publish": "npm run release:prepare && node scripts/run-release-npm.mjs publish --access public",
+    "pack:check": "npm run release:pack",
+    "publish:check": "npm run release:check"
   },
   "engines": {
     "node": ">=22"

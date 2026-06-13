@@ -14,6 +14,7 @@ coverage/
 # Local caches
 .image-quick-cache/
 .cache/
+.release/
 
 # Generated assets and scratch work
 out/
