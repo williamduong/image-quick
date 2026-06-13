@@ -53,6 +53,23 @@ Install dependencies:
 npm install
 ```
 
+Cross-platform install notes:
+
+- Windows:
+  - install Node.js 22+
+  - install ImageMagick so `magick.exe` is available, or set `IMAGE_QUICK_MAGICK_COMMAND`
+  - install `rembg` and ensure `rembg.exe` is on `PATH`, or set `IMAGE_QUICK_REMBG_COMMAND`
+- macOS:
+  - install Node.js 22+
+  - install ImageMagick with Homebrew
+  - install `rembg` with `pipx` or Python `pip`
+- Linux:
+  - install Node.js 22+
+  - install ImageMagick from your distro package manager
+  - install `rembg` with `pipx` or Python `pip`
+
+On macOS and Linux, `image-quick` will try `magick` first and fall back to `convert` when that is the only ImageMagick binary on the machine.
+
 If installed from npm, the intended CLI flow is:
 
 ```bash
@@ -60,12 +77,22 @@ npm install -g image-quick
 image-quick doctor
 ```
 
+For local provider-key storage without relying on `.env`, you can use:
+
+```bash
+image-quick auth set openai
+image-quick auth doctor
+```
+
+This stores keys in the user config directory, for example `~/.image-quick/auth.json` on macOS/Linux or `%USERPROFILE%\\.image-quick\\auth.json` on Windows.
+
 ## Quick Start
 
 Installed globally from npm:
 
 ```bash
 image-quick doctor
+image-quick auth doctor
 image-quick template list
 image-quick provider list
 image-quick source list
@@ -122,10 +149,37 @@ Output resolution order:
 - `IMAGE_QUICK_OUTPUT_DIR`
 - current working directory
 
+Provider API key resolution order:
+
+- local `image-quick auth set <provider>` store in the user config directory
+- environment variables such as `OPENAI_API_KEY`
+
+The local auth store is safer than keeping secrets in the project tree, but it is still a plain local file rather than an encrypted system vault.
+
 Create local environment configuration:
 
 ```bash
 cp .env.example .env
+```
+
+Windows PowerShell equivalent:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Store one provider key in the local user config directory:
+
+```bash
+image-quick auth set openai
+image-quick auth set google-gemini
+image-quick auth doctor
+```
+
+Clear one stored provider key:
+
+```bash
+image-quick auth clear openai
 ```
 
 Check that optional tools are available:
@@ -147,6 +201,7 @@ The same commands after global install are:
 ```bash
 image-quick provider list
 image-quick model list
+image-quick auth doctor
 image-quick settings show
 image-quick source list
 ```

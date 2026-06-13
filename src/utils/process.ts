@@ -1,4 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { spawn } from "node:child_process";
 
 export interface RunResult {
@@ -57,6 +58,15 @@ function resolveCommandPath(command: string): string {
     return envOverride;
   }
 
+  if (command === "magick") {
+    const discoveredPath = findExecutableOnPath(
+      process.platform === "win32" ? ["magick.exe"] : ["magick", "convert"],
+    );
+    if (discoveredPath) {
+      return discoveredPath;
+    }
+  }
+
   if (process.platform !== "win32") {
     return command;
   }
@@ -76,21 +86,44 @@ function resolveCommandPath(command: string): string {
 function resolveCommandOverride(command: string): string | undefined {
   switch (command) {
     case "magick":
-      return readExistingPath(process.env.IMAGE_QUICK_MAGICK_COMMAND);
+      return readCommandOverride(process.env.IMAGE_QUICK_MAGICK_COMMAND);
     case "rembg":
-      return readExistingPath(process.env.IMAGE_QUICK_REMBG_COMMAND);
+      return readCommandOverride(process.env.IMAGE_QUICK_REMBG_COMMAND);
     default:
       return undefined;
   }
 }
 
-function readExistingPath(value: string | undefined): string | undefined {
+function readCommandOverride(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   if (!normalized) {
     return undefined;
   }
 
-  return existsSync(normalized) ? normalized : undefined;
+  if (normalized.includes("\\") || normalized.includes("/")) {
+    return existsSync(normalized) ? normalized : undefined;
+  }
+
+  return normalized;
+}
+
+function findExecutableOnPath(commands: string[]): string | undefined {
+  const pathValue = process.env.PATH;
+  if (!pathValue) {
+    return undefined;
+  }
+
+  const directories = pathValue.split(delimiter).filter(Boolean);
+  for (const directory of directories) {
+    for (const command of commands) {
+      const fullPath = join(directory, command);
+      if (existsSync(fullPath)) {
+        return fullPath;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function findWindowsExecutable(

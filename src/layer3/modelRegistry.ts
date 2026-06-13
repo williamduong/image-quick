@@ -4,6 +4,7 @@ import type {
   GenerateQuality,
   GenerationTier,
 } from "./tiers.js";
+import { getStoredProviderApiKey } from "../utils/auth.js";
 
 export const IMAGE_PROVIDERS = [
   "openai",
@@ -45,6 +46,13 @@ export interface ProviderModelDefinition {
 export interface ResolvedModelSelection {
   provider: ProviderDefinition;
   model: ProviderModelDefinition;
+}
+
+export interface ProviderApiKeyDetails {
+  providerId: ImageProviderId;
+  envName: string;
+  source: "local" | "env" | "none";
+  value?: string;
 }
 
 const providers: ProviderDefinition[] = [
@@ -340,9 +348,40 @@ export function resolveModelSelection(input: {
   };
 }
 
-export function getProviderApiKey(providerId: ImageProviderId): string | undefined {
+export async function getProviderApiKeyDetails(
+  providerId: ImageProviderId,
+): Promise<ProviderApiKeyDetails> {
   const provider = getProviderDefinition(providerId);
-  const value = process.env[provider.apiKeyEnv];
-  const normalized = value?.trim();
-  return normalized ? normalized : undefined;
+  const localValue = await getStoredProviderApiKey(providerId);
+  if (localValue) {
+    return {
+      providerId,
+      envName: provider.apiKeyEnv,
+      source: "local",
+      value: localValue,
+    };
+  }
+
+  const envValue = process.env[provider.apiKeyEnv]?.trim();
+  if (envValue) {
+    return {
+      providerId,
+      envName: provider.apiKeyEnv,
+      source: "env",
+      value: envValue,
+    };
+  }
+
+  return {
+    providerId,
+    envName: provider.apiKeyEnv,
+    source: "none",
+  };
+}
+
+export async function getProviderApiKey(
+  providerId: ImageProviderId,
+): Promise<string | undefined> {
+  const details = await getProviderApiKeyDetails(providerId);
+  return details.value;
 }

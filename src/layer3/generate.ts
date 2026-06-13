@@ -271,7 +271,7 @@ async function generateWithOpenAi(
   outputPath: string,
   prompt: string,
 ): Promise<OpenAiGenerationResult> {
-  const apiKey = getProviderApiKey("openai");
+  const apiKey = await getProviderApiKey("openai");
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is missing");
   }
@@ -385,7 +385,7 @@ async function generateWithGoogleGemini(
   outputPath: string,
   prompt: string,
 ): Promise<GoogleGeminiGenerationResult> {
-  const apiKey = getProviderApiKey("google-gemini");
+  const apiKey = await getProviderApiKey("google-gemini");
   if (!apiKey) {
     throw new Error("GOOGLE_API_KEY is missing");
   }

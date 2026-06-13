@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve } from "node:path";
+import readline from "node:readline/promises";
 
 import { Command } from "commander";
 
@@ -25,6 +26,7 @@ import {
   loadVariant,
 } from "./layer3/templates.js";
 import {
+  getProviderApiKeyDetails,
   getProviderApiKey,
   isImageProvider,
   listImageProviders,
@@ -44,6 +46,13 @@ import { loadClosestEnv } from "./utils/env.js";
 import { readJsonFile, writeJsonFile } from "./utils/fs.js";
 import { runCommand } from "./utils/process.js";
 import {
+  clearStoredProviderApiKey,
+  getAuthPath,
+  maskSecret,
+  readAuthStore,
+  setStoredProviderApiKey,
+} from "./utils/auth.js";
+import {
   getSettingsPath,
   readSettings,
   updateSettings,
@@ -54,6 +63,75 @@ loadClosestEnv();
 const program = new Command();
 
 program.name(APP_NAME).description("Tiered image workflow CLI").version(APP_VERSION);
+
+const authCommand = program
+  .command("auth")
+  .description("Manage local provider API keys in the user config directory");
+
+authCommand
+  .command("set")
+  .description("Store one provider API key in local user config")
+  .argument("<provider>", "Provider id such as openai or google-gemini")
+  .argument("[apiKey]", "Optional API key value. If omitted, the CLI prompts for it.")
+  .action(async (provider: string, apiKey?: string) => {
+    if (!isImageProvider(provider)) {
+      throw new Error(`Unknown provider: ${provider}`);
+    }
+
+    const value = apiKey ?? await promptForSecret(`Enter API key for ${provider}: `);
+    await setStoredProviderApiKey(provider, value);
+    console.log(JSON.stringify({
+      path: getAuthPath(),
+      provider,
+      stored: true,
+      keyPreview: maskSecret(value),
+      source: "local",
+    }, null, 2));
+  });
+
+authCommand
+  .command("clear")
+  .description("Remove one provider API key from local user config")
+  .argument("<provider>", "Provider id such as openai or google-gemini")
+  .action(async (provider: string) => {
+    if (!isImageProvider(provider)) {
+      throw new Error(`Unknown provider: ${provider}`);
+    }
+
+    await clearStoredProviderApiKey(provider);
+    console.log(JSON.stringify({
+      path: getAuthPath(),
+      provider,
+      stored: false,
+      source: "local",
+    }, null, 2));
+  });
+
+authCommand
+  .command("doctor")
+  .description("Inspect local and environment API-key sources without printing secrets")
+  .action(async () => {
+    const store = await readAuthStore();
+    const providers = await Promise.all(
+      listImageProviders().map(async (provider) => {
+        const keyDetails = await getProviderApiKeyDetails(provider.id);
+        return {
+          id: provider.id,
+          label: provider.label,
+          envName: provider.apiKeyEnv,
+          localStored: Boolean(store.providers?.[provider.id]),
+          envPresent: Boolean(process.env[provider.apiKeyEnv]?.trim()),
+          effectiveSource: keyDetails.source,
+          effectiveKeyPreview: maskSecret(keyDetails.value),
+        };
+      }),
+    );
+
+    console.log(JSON.stringify({
+      path: getAuthPath(),
+      providers,
+    }, null, 2));
+  });
 
 const settingsCommand = program
   .command("settings")
@@ -144,13 +222,19 @@ program
       }),
     );
 
-    const providers = listImageProviders().map((provider) => ({
-      id: provider.id,
-      label: provider.label,
-      status: provider.status,
-      apiKeyEnv: provider.apiKeyEnv,
-      apiKeyPresent: Boolean(getProviderApiKey(provider.id)),
-    }));
+    const providers = await Promise.all(
+      listImageProviders().map(async (provider) => {
+        const keyDetails = await getProviderApiKeyDetails(provider.id);
+        return {
+          id: provider.id,
+          label: provider.label,
+          status: provider.status,
+          apiKeyEnv: provider.apiKeyEnv,
+          apiKeyPresent: Boolean(keyDetails.value),
+          apiKeySource: keyDetails.source,
+        };
+      }),
+    );
 
     console.log(JSON.stringify({
       providers,
@@ -579,4 +663,34 @@ function parseProviderOption(value: string | undefined): ImageProviderId | undef
   }
 
   return value;
+}
+
+async function promptForSecret(prompt: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  }) as readline.Interface & { stdoutMuted?: boolean; _writeToOutput?: (text: string) => void };
+
+  rl.stdoutMuted = true;
+  rl._writeToOutput = function writeToOutput(text: string): void {
+    if (rl.stdoutMuted) {
+      process.stdout.write(text.endsWith("\n") ? text : "*");
+      return;
+    }
+
+    process.stdout.write(text);
+  };
+
+  try {
+    const value = await rl.question(prompt);
+    console.log();
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error("API key cannot be empty");
+    }
+
+    return trimmed;
+  } finally {
+    rl.close();
+  }
 }
