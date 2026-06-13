@@ -2,6 +2,8 @@
 
 Production-friendly CLI for sourcing, editing, composing, and generating images.
 
+License: MIT.
+
 ## Getting Started
 
 Install globally:

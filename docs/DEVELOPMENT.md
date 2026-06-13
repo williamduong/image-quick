@@ -2,6 +2,8 @@
 
 This document is for people working from the git repo rather than installing `image-quick` from npm.
 
+License for both the repo workspace and the published package: MIT.
+
 ## Mindset
 
 The repo has two intentionally different surfaces:

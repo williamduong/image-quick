@@ -4,6 +4,8 @@ This repository is the development workspace for the `image-quick` CLI.
 
 If you want the end-user install and usage guide that ships to npm, read [publish/npm/README.md](publish/npm/README.md).
 
+License: MIT. See [LICENSE](LICENSE).
+
 ## Dev vs Release Surfaces
 
 The project intentionally keeps two separate surfaces:
