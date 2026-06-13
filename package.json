@@ -1,6 +1,6 @@
 {
   "name": "image-quick",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Development workspace for the image-quick CLI.",
   "private": true,
   "license": "MIT",
